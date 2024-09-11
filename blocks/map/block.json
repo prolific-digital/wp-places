@@ -1,0 +1,17 @@
+{
+  "name": "acf/map",
+  "title": "Map",
+  "description": "An interactive map that displays locations.",
+  "style": ["file:./map.css"],
+  "category": "media",
+  "icon": "location-alt",
+  "keywords": ["map", "locations", "places"],
+  "acf": {
+    "mode": "preview",
+    "renderTemplate": "block.php",
+    "validate": "false"
+  },
+  "supports": {
+    "anchor": true
+  }
+}
