@@ -1,13 +1,5 @@
 # Places
 
-**Contributors:** Prolific Digital  
-**Tags:** maps, locations, custom post type, facets, ACF, FacetWP, Google Maps  
-**Requires at least:** 5.0  
-**Tested up to:** 6.0  
-**Requires PHP:** 7.2  
-**License:** GPLv2 or later  
-**License URI:** https://www.gnu.org/licenses/gpl-2.0.html
-
 A custom plugin for managing locations with categories and displaying them using FacetWP, ACF Pro, and FacetWP Maps.
 
 ## Description
