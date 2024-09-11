@@ -1,4 +1,4 @@
-# Places
+# WP Places
 
 A custom plugin for managing locations with categories and displaying them using FacetWP, ACF Pro, and FacetWP Maps.
 
