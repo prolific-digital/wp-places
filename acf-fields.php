@@ -378,3 +378,13 @@ add_action('acf/include_fields', function () {
     'show_in_rest' => 0,
   ));
 });
+
+add_action('acf/init', function () {
+  acf_add_options_page(array(
+    'page_title' => 'Map Options',
+    'menu_slug' => 'map-options',
+    'parent_slug' => 'edit.php?post_type=locations',
+    'position' => '',
+    'redirect' => false,
+  ));
+});
