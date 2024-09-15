@@ -5,77 +5,6 @@ add_action('acf/include_fields', function () {
   }
 
   acf_add_local_field_group(array(
-    'key' => 'group_66e198cdb884e',
-    'title' => 'Block - Map',
-    'fields' => array(
-      array(
-        'key' => 'field_66e19a5c2382d',
-        'label' => 'Facets',
-        'name' => 'facets',
-        'aria-label' => '',
-        'type' => 'repeater',
-        'instructions' => 'A facet is a filter used to refine search results by allowing users to narrow down data based on specific attributes or categories. <a href="https://facetwp.com/help-center/" target="_blank">Learn more</a>',
-        'required' => 0,
-        'conditional_logic' => 0,
-        'wrapper' => array(
-          'width' => '',
-          'class' => '',
-          'id' => '',
-        ),
-        'layout' => 'table',
-        'pagination' => 0,
-        'min' => 0,
-        'max' => 0,
-        'collapsed' => '',
-        'button_label' => 'Add Facet',
-        'rows_per_page' => 20,
-        'sub_fields' => array(
-          array(
-            'key' => 'field_66e19a952382e',
-            'label' => 'Facet',
-            'name' => 'facet',
-            'aria-label' => '',
-            'type' => 'text',
-            'instructions' => '',
-            'required' => 0,
-            'conditional_logic' => 0,
-            'wrapper' => array(
-              'width' => '',
-              'class' => '',
-              'id' => '',
-            ),
-            'default_value' => '',
-            'maxlength' => '',
-            'allow_in_bindings' => 0,
-            'placeholder' => '',
-            'prepend' => '',
-            'append' => '',
-            'parent_repeater' => 'field_66e19a5c2382d',
-          ),
-        ),
-      ),
-    ),
-    'location' => array(
-      array(
-        array(
-          'param' => 'block',
-          'operator' => '==',
-          'value' => 'acf/map',
-        ),
-      ),
-    ),
-    'menu_order' => 0,
-    'position' => 'normal',
-    'style' => 'default',
-    'label_placement' => 'top',
-    'instruction_placement' => 'label',
-    'hide_on_screen' => '',
-    'active' => true,
-    'description' => '',
-    'show_in_rest' => 0,
-  ));
-
-  acf_add_local_field_group(array(
     'key' => 'group_66e1936c738eb',
     'title' => 'CPT - Locations',
     'fields' => array(
@@ -241,6 +170,27 @@ add_action('acf/include_fields', function () {
         'aria-label' => '',
         'type' => 'text',
         'instructions' => '<a herf="https://developers.google.com/maps/documentation/javascript/overview">Visit the official Google Maps documentation</a> for more details on how to obtain an API key.',
+        'required' => 0,
+        'conditional_logic' => 0,
+        'wrapper' => array(
+          'width' => '',
+          'class' => '',
+          'id' => '',
+        ),
+        'default_value' => '',
+        'maxlength' => '',
+        'allow_in_bindings' => 0,
+        'placeholder' => '',
+        'prepend' => '',
+        'append' => '',
+      ),
+      array(
+        'key' => 'field_66e72f35eb454',
+        'label' => 'Toggle Button Text',
+        'name' => 'toggle_button_text',
+        'aria-label' => '',
+        'type' => 'text',
+        'instructions' => 'The text you would like to see when the toggle button appears on mobile.',
         'required' => 0,
         'conditional_logic' => 0,
         'wrapper' => array(
@@ -426,15 +376,5 @@ add_action('acf/include_fields', function () {
     'active' => true,
     'description' => '',
     'show_in_rest' => 0,
-  ));
-});
-
-add_action('acf/init', function () {
-  acf_add_options_page(array(
-    'page_title' => 'Map Options',
-    'menu_slug' => 'map-options',
-    'parent_slug' => 'edit.php?post_type=locations',
-    'position' => '',
-    'redirect' => false,
   ));
 });

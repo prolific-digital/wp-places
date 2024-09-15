@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Places - Map Locations
  * Description: A custom plugin to manage locations with location categories.
- * Version: 1.0
+ * Version: 0.2
  * Author: Prolific Digital
  * Author URI: https://prolificdigital.com
  * License: GPL2

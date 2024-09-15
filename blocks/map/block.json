@@ -13,5 +13,6 @@
   },
   "supports": {
     "anchor": true
-  }
+  },
+  "viewScript": "file:./view.js"
 }
