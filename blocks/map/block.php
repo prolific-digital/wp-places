@@ -43,16 +43,15 @@ if (! empty($block['align'])) {
     </div>
   <?php else : ?>
 
+    <button class="toggle-panel" aria-expanded="false" aria-controls="facet-filter-group-<?php echo esc_attr($id); ?>">
+      <?php echo get_field('toggle_button_text', 'option') ? get_field('toggle_button_text', 'option') : 'Filter Locations'; ?>
+    </button>
+
     <div id="facet-map-<?php echo esc_attr($id); ?>" class="facet custom-map">
       <?php echo facetwp_display('facet', 'location_map'); ?>
     </div>
 
-    <div id="facet-filter-group-<?php echo esc_attr($id); ?>" class="facet filter-panel">
-
-      <!-- <button class="toggle-panel"><?php echo get_field('toggle_button_text', 'option'); ?></button> -->
-
-      <!-- If the text does not exists, use a placeholder text -->
-      <button class="toggle-panel"><?php echo get_field('toggle_button_text', 'option') ? get_field('toggle_button_text', 'option') : 'Filter Locations'; ?></button>
+    <div id="facet-filter-group-<?php echo esc_attr($id); ?>" class="facet panel" role="region" aria-label="Filter locations panel">
 
       <div class="panel-content">
         <?php

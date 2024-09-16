@@ -1,13 +1,16 @@
-// create a document ready function vanilla js
 document.addEventListener("DOMContentLoaded", function () {
-  // get .toggle-panel, .panel-content, and .filter-panel
-  var filterPanel = document.querySelector(".filter-panel");
-  var togglePanel = filterPanel.querySelector(".toggle-panel");
-  var panelContent = filterPanel.querySelector(".panel-content");
+  // get every isntance of .block-map
+  var maps = document.querySelectorAll(".block-map");
 
-  // add click event listener to togglePanel
-  togglePanel.addEventListener("click", function () {
-    // toggle the class 'open' on panelContent
-    panelContent.classList.toggle("open");
+  // loop through each instance
+  maps.forEach(function (map) {
+    // get the .toggle-panel, and .facet.panel
+    var toggle = map.querySelector(".toggle-panel");
+    var panel = map.querySelector(".facet.panel");
+
+    // when the toggle is clicked, toggle the class 'open' on the panel
+    toggle.addEventListener("click", function () {
+      panel.classList.toggle("open");
+    });
   });
 });
