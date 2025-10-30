@@ -51,20 +51,23 @@ if (! empty($block['align'])) {
       <?php echo facetwp_display('facet', 'location_map'); ?>
     </div>
 
-    <div id="facet-filter-group-<?php echo esc_attr($id); ?>" class="facet panel" role="region" aria-label="Filter locations panel">
+    <div id="facet-filter-group-<?php echo esc_attr($id); ?>" class="facet panel" role="region" aria-label="Filter places panel">
 
       <div class="panel-content">
         <?php
         echo facetwp_display('facet', 'location_proximity');
         echo facetwp_display('facet', 'location_categories');
+        echo facetwp_display('facet', 'location_types');
+        echo facetwp_display('facet', 'amenities');
+        echo facetwp_display('facet', 'activities');
         ?>
 
         <div class="location-listing">
           <div class="facetwp-template">
             <?php
-            // WP_Query to retrieve all Locations posts
+            // WP_Query to retrieve all Places posts
             $args = array(
-              'post_type'      => 'locations',
+              'post_type'      => 'places',
               'posts_per_page' => -1, // Retrieve all posts
               'facetwp' => true
             );
@@ -140,7 +143,7 @@ if (! empty($block['align'])) {
                 echo '</div>'; // Close location item
               }
             } else {
-              echo '<p>No locations found.</p>';
+              echo '<p>No places found.</p>';
             }
 
             // Reset post data
