@@ -101,10 +101,8 @@ add_filter('facetwp_facets', function ($facets) {
 /**
  * Customize the content of map markers for FacetWP maps.
  *
- * This filter modifies the content displayed in map markers. It combines various fields 
- * such as post title, location categories, phone number, address, additional details, 
- * and a "View More" link. The content is dynamically generated based on the post's 
- * custom fields and taxonomies, and outputs HTML that is displayed in the marker's info window.
+ * This filter modifies the content displayed in map markers with featured image,
+ * category badge, title, hours, address, and view details button.
  *
  * @param array $args    The existing marker arguments.
  * @param int   $post_id The ID of the post for which the marker is being generated.
@@ -115,56 +113,64 @@ add_filter('facetwp_map_marker_args', function ($args, $post_id) {
   // Get post title
   $title = get_the_title($post_id);
 
-  // Get location categories
+  // Get post permalink
+  $permalink = get_permalink($post_id);
+
+  // Get first location category
   $location_categories = get_the_terms($post_id, 'location_category');
-  $category_output = '';
+  $category_badge = '';
   if ($location_categories && !is_wp_error($location_categories)) {
-    $category_output = '<div class="marker-categories">';
-    foreach ($location_categories as $category) {
-      $category_output .= '<span class="marker-category">' . esc_html($category->name) . '</span> ';
-    }
-    $category_output .= '</div>';
+    $first_category = reset($location_categories);
+    $category_badge = '<span class="marker-category-badge">' . esc_html($first_category->name) . '</span>';
   }
 
-  // Get phone number
-  $phone = get_field('phone_number', $post_id);
-  $phone_output = $phone ? '<a class="marker-phone" href="' . esc_url($phone['url']) . '" target="' . esc_attr($phone['target']) . '">' . esc_html($phone['title']) . '</a>' : '';
+  // Get featured image with category badge
+  $featured_image = '';
+  if (has_post_thumbnail($post_id)) {
+    $image_url = get_the_post_thumbnail_url($post_id, 'medium');
+    $featured_image = '<div class="marker-image">';
+    $featured_image .= $category_badge;
+    $featured_image .= '<img src="' . esc_url($image_url) . '" alt="' . esc_attr($title) . '">';
+    $featured_image .= '</div>';
+  }
 
-  // Get address fields
+  // Get hours display
+  $hours_display = get_field('hours_display', $post_id);
+  $hours_output = '';
+  if ($hours_display && is_array($hours_display)) {
+    $hours_output = '<div class="marker-hours">';
+    $hours_output .= '<svg class="marker-icon marker-icon-clock" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/><path d="M10 5V10L13 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    foreach ($hours_display as $hours_item) {
+      if (isset($hours_item['hours'])) {
+        $hours_output .= '<div>' . esc_html($hours_item['hours']) . '</div>';
+      }
+    }
+    $hours_output .= '</div>';
+  }
+
+  // Get address
   $address = get_field('address', $post_id);
   $address_output = '';
-  if ($address) {
-    $address_output = '<address class="marker-address">';
-    if (isset($address['street_number']) && isset($address['street_name'])) {
-      $address_output .= $address['street_number'] . ' ' . $address['street_name'] . '<br>';
-    }
-    if (isset($address['city']) && isset($address['state']) && isset($address['post_code'])) {
-      $address_output .= $address['city'] . ', ' . $address['state'] . ' ' . $address['post_code'];
-    }
-    $address_output .= '</address>';
+  if ($address && isset($address['address'])) {
+    $address_output = '<div class="marker-address">';
+    $address_output .= '<svg class="marker-icon marker-icon-pin" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2C6.68629 2 4 4.68629 4 8C4 11.3137 10 18 10 18C10 18 16 11.3137 16 8C16 4.68629 13.3137 2 10 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="8" r="2" stroke="currentColor" stroke-width="2"/></svg>';
+    $address_output .= '<span>' . esc_html($address['address']) . '</span>';
+    $address_output .= '</div>';
   }
 
-  // Get additional details
-  $details = get_field('details', $post_id);
-  $details_output = $details ? '<div class="marker-details">' . $details . '</div>' : '';
-
-  // Get "View More" link
-  $view_more = get_field('view_more', $post_id);
-  $view_more_output = $view_more ? '<a class="marker-view-more" href="' . esc_url($view_more['url']) . '" target="' . esc_attr($view_more['target']) . '">' . esc_html($view_more['title']) . '</a>' : '';
-
-  // Get category title
-  $category_title_visibility = get_field('show_category_title', $post_id);
-  $category_title = get_field('category_title', $post_id);
-  $category_title_output = ($category_title_visibility == 1 && $category_title) ? '<div class="marker-category-title">' . $category_title . '</div>' : '';
+  // View Details button
+  $view_details_button = '<a href="' . esc_url($permalink) . '" class="marker-view-details">VIEW DETAILS</a>';
 
   // Combine all content
-  $marker_content = $category_output .
-    '<h2 class="marker-title">' . $title . '</h2>' .
-    ($address_output ? $address_output . '<br>' : '') .
-    ($phone_output ? $phone_output . '<br>' : '') .
-    ($details_output ? $details_output . '<br>' : '') .
-    ($view_more_output ? $view_more_output . '<br>' : '') .
-    ($category_title_output ? $category_title_output . '<br>' : '');
+  $marker_content = '<div class="marker-popup">';
+  $marker_content .= $featured_image;
+  $marker_content .= '<div class="marker-content">';
+  $marker_content .= '<h3 class="marker-title">' . esc_html($title) . '</h3>';
+  $marker_content .= $hours_output;
+  $marker_content .= $address_output;
+  $marker_content .= $view_details_button;
+  $marker_content .= '</div>';
+  $marker_content .= '</div>';
 
   $args['content'] = $marker_content;
   return $args;
