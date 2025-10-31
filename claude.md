@@ -68,28 +68,38 @@ This is achieved through:
 
 ## ACF Field Groups
 
-### CPT - Places
+The plugin uses two separate field groups for better organization:
+
+### 1. CPT - Places: Basic Info
 **Location Rule:** Post Type is equal to Places
+**Purpose:** Core place information and metadata
 
-#### Field Structure
+#### Field Structure (in order):
 
-1. **Gallery** (`gallery`)
-   - Type: Gallery
-   - Purpose: Multiple images for carousel display
-   - Return Format: Array
+1. **Address** (`address`)
+   - Type: Google Map
+   - Purpose: Location display and map rendering
+   - Returns: Array with lat, lng, address
 
 2. **About Content** (`about_content`)
    - Type: WYSIWYG Editor
    - Toolbar: Full
-   - Purpose: Main descriptive content
+   - Purpose: Main descriptive content for About tab
+   - Media Upload: Yes
 
-3. **Hours Display** (`hours_display`)
+3. **Gallery** (`gallery`)
+   - Type: Gallery
+   - Purpose: Multiple images for carousel display
+   - Return Format: Array
+
+4. **Hours Display** (`hours_display`)
    - Type: Repeater
    - Sub-field: `hours` (Text)
    - Purpose: Display operating hours
+   - Min Rows: 1 (starts with empty row)
    - Example: "Mon - Fri: 9:00am - 5:00pm"
 
-4. **Contact Info** (Group: `contact_info`)
+5. **Contact Info** (Group: `contact_info`)
    - **Phone Number** (`phone_number`)
      - Type: Link
      - Return Format: Array
@@ -97,22 +107,136 @@ This is achieved through:
      - Type: Link
      - Return Format: Array
 
-5. **Social Media Links** (`social_media_links`)
+6. **Social Media Links** (`social_media_links`)
    - Type: Repeater
+   - Min Rows: 1 (starts with empty row)
    - Sub-fields:
      - `platform_name` (Text)
      - `icon` (Image) - Upload custom social icons
      - `url` (URL)
 
-6. **Address** (`address`)
-   - Type: Google Map
-   - Purpose: Location display and map rendering
-   - Returns: Array with lat, lng, address
-
 7. **CTA Button** (`cta_button`)
    - Type: Link
    - Purpose: Primary call-to-action
    - Example: "Register Now", "Book a Tour"
+
+### 2. CPT - Places: Tab Sections
+**Location Rule:** Post Type is equal to Places
+**Purpose:** Configure frontend tabs and their content
+
+**Backend Structure:** Each tab section is wrapped in a collapsible accordion for better UX. Editors can collapse sections they're not working on to reduce scrolling.
+
+#### Accordion Sections:
+
+##### Membership Section (Collapsible)
+- **Show Membership Tab** (`show_membership`)
+  - Type: True/False
+  - UI Toggle: On/Off
+  - Default: Off
+
+- **Membership** (`membership`) - *Conditional: Shows when toggle ON*
+  - Type: Repeater
+  - Min Rows: 1
+  - Layout: Block
+  - Sub-fields:
+    - `title` (Text) - Required
+    - `details` (WYSIWYG, Full toolbar)
+    - `button` (Link) - Optional CTA
+
+##### Features & Rates Section (Collapsible)
+- **Show Features & Rates Tab** (`show_features_rates`)
+  - Type: True/False
+  - UI Toggle: On/Off
+  - Default: Off
+
+- **Features & Rates** (`features_rates`) - *Conditional: Shows when toggle ON*
+  - Type: Repeater (Sections)
+  - Min Rows: 1
+  - Layout: Block
+  - Sub-fields:
+    - `section_title` (Text)
+    - `show_section_title` (True/False) - Toggle title visibility
+    - `show_section_description` (True/False) - Toggle description visibility
+    - **Feature Blocks** (Nested Repeater)
+      - Min Rows: 1
+      - Sub-fields:
+        - `block_title` (WYSIWYG, Basic toolbar)
+        - **Items** (Nested Repeater)
+          - Min Rows: 1
+          - Sub-field: `item` (Text)
+    - `section_description` (Text)
+
+##### Amenities Section (Collapsible)
+- **Show Amenities Tab** (`show_amenities`)
+  - Type: True/False
+  - UI Toggle: On/Off
+  - Default: Off
+
+- **Amenities** (`amenities_tab`) - *Conditional: Shows when toggle ON*
+  - Type: Repeater
+  - Min Rows: 1
+  - Layout: Block
+  - Note: Distinct from Amenities taxonomy (this is for narrative content)
+  - Sub-fields:
+    - `title` (Text) - Required
+    - `description` (Textarea)
+
+##### Programs Section (Collapsible)
+- **Show Programs Tab** (`show_programs`)
+  - Type: True/False
+  - UI Toggle: On/Off
+  - Default: Off
+
+- **Programs** (`programs`) - *Conditional: Shows when toggle ON*
+  - Type: Text
+  - Purpose: Shortcode input from scheduling system
+  - Placeholder: `[program_schedule id="123"]`
+
+##### Rentals Section (Collapsible)
+- **Show Rentals Tab** (`show_rentals`)
+  - Type: True/False
+  - UI Toggle: On/Off
+  - Default: Off
+
+- **Rentals** (`rentals`) - *Conditional: Shows when toggle ON*
+  - Type: Relationship
+  - Post Type: `rentals`
+  - Return Format: Object
+  - Purpose: Link to Rentals CPT entries
+  - Note: Rentals CPT must be created separately
+
+##### Events Section (Collapsible)
+- **Show Events Tab** (`show_events`)
+  - Type: True/False
+  - UI Toggle: On/Off
+  - Default: Off
+
+- **Events** (`events_tab`) - *Conditional: Shows when toggle ON*
+  - Type: Group
+  - Sub-fields:
+    - `event_selection_mode` (Radio)
+      - Options: "By Venue", "By Proximity", "By Linked Location"
+      - Default: "venue"
+    - `tec_venue` (Post Object) - Conditional on mode = venue
+      - Post Type: `tribe_venue`
+    - `linked_location` (Post Object) - Conditional on mode = location
+    - `max_events` (Number)
+      - Default: 3
+      - Min: 1, Max: 20
+
+##### FAQs Section (Collapsible)
+- **Show FAQs Tab** (`show_faqs`)
+  - Type: True/False
+  - UI Toggle: On/Off
+  - Default: Off
+
+- **FAQs** (`faqs`) - *Conditional: Shows when toggle ON*
+  - Type: Repeater
+  - Min Rows: 1
+  - Layout: Block
+  - Sub-fields:
+    - `title` (Text) - Required (The question)
+    - `content` (WYSIWYG, Full toolbar) - The answer
 
 ### Map Settings Options Page
 **Location:** Under Places menu (`edit.php?post_type=places`)
@@ -495,7 +619,121 @@ Benefits:
 3. Handle cases where API fails to load
 4. Wrap in IIFE to avoid global scope pollution
 
+## Backend Editor Experience
+
+### Field Organization
+When editing a Place, editors see two metaboxes:
+
+1. **CPT - Places: Basic Info**
+   - Shows all basic metadata fields
+   - Field order: Address → About Content → Gallery → Hours → Contact → Socials → CTA
+
+2. **CPT - Places: Tab Sections**
+   - Shows collapsible accordion sections
+   - Each section contains a toggle + content fields
+   - Sections start collapsed by default
+   - Multi-expand enabled (can open multiple sections at once)
+
+### Collapsible Accordion Workflow
+```
+▼ Membership Section
+  └─ Show Membership Tab [Toggle]
+  └─ Membership (repeater) [appears when toggle ON]
+
+▼ Features & Rates Section
+  └─ Show Features & Rates Tab [Toggle]
+  └─ Features & Rates (repeater) [appears when toggle ON]
+
+... (7 sections total)
+```
+
+**Benefits:**
+- **Focus:** Collapse sections not being edited
+- **Reduced Scrolling:** Even with all tabs active, editors can minimize visual clutter
+- **Clear Structure:** Each tab's toggle and content are grouped together
+- **Conditional Rendering:** Content fields only show when their toggle is ON
+
+### Repeater Defaults
+All repeater fields start with 1 empty row, so editors can immediately begin adding content without clicking "Add Row" first.
+
+## JavaScript Implementation
+
+### Single Place Interactions (`js/single-place.js`)
+
+**File Location:** `/js/single-place.js`
+**Enqueued:** Only on single place pages (`is_singular('places')`)
+**Dependencies:** None (pure vanilla JavaScript)
+
+#### Features:
+1. **Tab Switching**
+   - Click tab buttons to switch content
+   - Only one tab active at a time
+   - Smooth content transitions
+
+2. **Keyboard Navigation**
+   - Arrow Left/Right: Navigate between tabs
+   - Arrow Up/Down: Navigate between tabs
+   - Home: Jump to first tab
+   - End: Jump to last tab
+
+3. **Deep Linking**
+   - URL hash support (e.g., `#membership`)
+   - Opens specific tab on page load
+   - Updates URL when switching tabs
+   - Browser back/forward button support
+
+4. **FAQ Accordions**
+   - Click to expand/collapse answers
+   - Proper ARIA disclosure pattern
+   - Keyboard accessible (Enter/Space keys)
+
+5. **ARIA Implementation**
+   - Full WAI-ARIA tab pattern
+   - `role="tablist"`, `role="tab"`, `role="tabpanel"`
+   - `aria-selected`, `aria-controls`, `aria-labelledby`
+   - `aria-expanded` for FAQ items
+   - Focus management
+
+6. **Print Support**
+   - All tab content expands for printing
+   - FAQs expand for printing
+   - Restores state after print
+
+#### Code Structure:
+```javascript
+// Tab management
+- initTabs()
+- activateTab()
+- handleTabKeydown()
+- updateURL()
+
+// FAQ management
+- initFAQs()
+- toggleFAQ()
+
+// Print support
+- beforeprint event
+- afterprint event
+```
+
 ## Version History
+
+### Phase 2: Tab System Implementation (Current)
+- Reorganized ACF into two field groups (Basic Info + Tab Sections)
+- Added 7 new tab sections with toggle controls
+- Implemented collapsible accordion UI in backend
+- Added conditional field rendering based on toggles
+- Created comprehensive tab content fields:
+  - Membership (repeater)
+  - Features & Rates (nested repeaters)
+  - Amenities (repeater)
+  - Programs (shortcode)
+  - Rentals (relationship)
+  - Events (TEC integration)
+  - FAQs (repeater with accordion)
+- Built vanilla JS tab system with keyboard navigation and deep linking
+- Moved About Content and Gallery to Basic Info
+- Set all repeaters to min 1 row for better UX
 
 ### Initial Alpha
 - Custom post type "Places" created
@@ -509,5 +747,5 @@ Benefits:
 ---
 
 **Last Updated:** 2025-10-30
-**Plugin Version:** Initial Alpha
+**Plugin Version:** Alpha (Phase 2)
 **Author:** Custom Development

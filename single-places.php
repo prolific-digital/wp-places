@@ -57,61 +57,345 @@
             <?php endif; ?>
 
             <!-- Tab Navigation -->
-            <nav class="place-tabs">
-              <button class="tab-button active" data-tab="about">ABOUT</button>
-              <button class="tab-button" data-tab="memberships">MEMBERSHIPS</button>
-              <button class="tab-button" data-tab="features">FEATURES & RATES</button>
-              <button class="tab-button" data-tab="amenities">AMENITIES</button>
-              <button class="tab-button" data-tab="programs">PROGRAMS</button>
-              <button class="tab-button" data-tab="rentals">RENTALS</button>
-              <button class="tab-button" data-tab="events">EVENTS</button>
-            </nav>
+            <?php
+            // Build dynamic tab list based on toggles and data presence
+            $available_tabs = array();
+
+            // About tab (always check for content, no toggle)
+            $about_content = get_field('about_content');
+            if (!empty($about_content)) {
+              $available_tabs[] = array(
+                'id' => 'about',
+                'label' => 'ABOUT'
+              );
+            }
+
+            // Membership
+            $show_membership = get_field('show_membership');
+            if (!empty($show_membership)) {
+              $membership = get_field('membership');
+              if (!empty($membership) && is_array($membership)) {
+                $available_tabs[] = array(
+                  'id' => 'membership',
+                  'label' => 'MEMBERSHIP'
+                );
+              }
+            }
+
+            // Features & Rates
+            $show_features_rates = get_field('show_features_rates');
+            if (!empty($show_features_rates)) {
+              $features_rates = get_field('features_rates');
+              if (!empty($features_rates) && is_array($features_rates)) {
+                $available_tabs[] = array(
+                  'id' => 'features',
+                  'label' => 'FEATURES & RATES'
+                );
+              }
+            }
+
+            // Amenities
+            $show_amenities = get_field('show_amenities');
+            if (!empty($show_amenities)) {
+              $amenities_tab = get_field('amenities_tab');
+              if (!empty($amenities_tab) && is_array($amenities_tab)) {
+                $available_tabs[] = array(
+                  'id' => 'amenities',
+                  'label' => 'AMENITIES'
+                );
+              }
+            }
+
+            // Programs
+            $show_programs = get_field('show_programs');
+            if (!empty($show_programs)) {
+              $programs = get_field('programs');
+              if (!empty($programs)) {
+                $available_tabs[] = array(
+                  'id' => 'programs',
+                  'label' => 'PROGRAMS'
+                );
+              }
+            }
+
+            // Rentals
+            $show_rentals = get_field('show_rentals');
+            if (!empty($show_rentals)) {
+              $rentals = get_field('rentals');
+              if (!empty($rentals) && is_array($rentals)) {
+                $available_tabs[] = array(
+                  'id' => 'rentals',
+                  'label' => 'RENTALS'
+                );
+              }
+            }
+
+            // Events
+            $show_events = get_field('show_events');
+            if (!empty($show_events)) {
+              $events_tab = get_field('events_tab');
+              // Events tab is available if configured
+              if (!empty($events_tab['event_selection_mode'])) {
+                $available_tabs[] = array(
+                  'id' => 'events',
+                  'label' => 'EVENTS'
+                );
+              }
+            }
+
+            // FAQs
+            $show_faqs = get_field('show_faqs');
+            if (!empty($show_faqs)) {
+              $faqs = get_field('faqs');
+              if (!empty($faqs) && is_array($faqs)) {
+                $available_tabs[] = array(
+                  'id' => 'faqs',
+                  'label' => 'FAQS'
+                );
+              }
+            }
+
+            // Render tabs if any are available
+            if (!empty($available_tabs)) :
+            ?>
+              <nav class="place-tabs" role="tablist" aria-label="Place information tabs">
+                <?php foreach ($available_tabs as $index => $tab) : ?>
+                  <button
+                    class="tab-button<?php echo $index === 0 ? ' active' : ''; ?>"
+                    data-tab="<?php echo esc_attr($tab['id']); ?>"
+                    role="tab"
+                    aria-selected="<?php echo $index === 0 ? 'true' : 'false'; ?>"
+                    aria-controls="tab-<?php echo esc_attr($tab['id']); ?>"
+                    id="btn-<?php echo esc_attr($tab['id']); ?>"
+                    tabindex="<?php echo $index === 0 ? '0' : '-1'; ?>"
+                  >
+                    <?php echo esc_html($tab['label']); ?>
+                  </button>
+                <?php endforeach; ?>
+              </nav>
+            <?php endif; ?>
 
             <!-- Two Column Layout -->
             <div class="place-content-wrapper">
 
               <!-- Left Column: Main Content -->
               <div class="place-main-content">
-                <div class="tab-content active" id="tab-about">
+
+                <?php if (!empty($about_content)) : ?>
+                <div class="tab-content active" id="tab-about" role="tabpanel" aria-labelledby="btn-about" tabindex="0">
                   <h2>About</h2>
-                  <?php
-                  $about_content = get_field('about_content');
-                  if ($about_content) {
-                    echo $about_content;
-                  }
-                  ?>
+                  <?php echo $about_content; ?>
                 </div>
+                <?php endif; ?>
 
-                <!-- Placeholder tabs for future content -->
-                <div class="tab-content" id="tab-memberships">
-                  <h2>Memberships</h2>
-                  <p>Memberships content coming soon.</p>
+                <?php
+                // Membership Tab
+                if (!empty($show_membership) && !empty($membership) && is_array($membership)) :
+                ?>
+                <div class="tab-content" id="tab-membership" role="tabpanel" aria-labelledby="btn-membership" tabindex="0" hidden>
+                  <h2>Membership</h2>
+                  <div class="membership-list">
+                    <?php foreach ($membership as $member) : ?>
+                      <div class="membership-item">
+                        <?php if (!empty($member['title'])) : ?>
+                          <h3><?php echo esc_html($member['title']); ?></h3>
+                        <?php endif; ?>
+                        <?php if (!empty($member['details'])) : ?>
+                          <div class="membership-details">
+                            <?php echo $member['details']; ?>
+                          </div>
+                        <?php endif; ?>
+                        <?php if (!empty($member['button']) && !empty($member['button']['url'])) : ?>
+                          <a href="<?php echo esc_url($member['button']['url']); ?>" class="membership-button" target="<?php echo esc_attr($member['button']['target'] ? $member['button']['target'] : '_self'); ?>">
+                            <?php echo esc_html($member['button']['title']); ?>
+                          </a>
+                        <?php endif; ?>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
                 </div>
+                <?php endif; ?>
 
-                <div class="tab-content" id="tab-features">
+                <?php
+                // Features & Rates Tab
+                if (!empty($show_features_rates) && !empty($features_rates) && is_array($features_rates)) :
+                ?>
+                <div class="tab-content" id="tab-features" role="tabpanel" aria-labelledby="btn-features" tabindex="0" hidden>
                   <h2>Features & Rates</h2>
-                  <p>Features & Rates content coming soon.</p>
-                </div>
+                  <div class="features-rates-list">
+                    <?php foreach ($features_rates as $section) : ?>
+                      <div class="features-section">
+                        <?php if (!empty($section['show_section_title']) && !empty($section['section_title'])) : ?>
+                          <h3><?php echo esc_html($section['section_title']); ?></h3>
+                        <?php endif; ?>
 
-                <div class="tab-content" id="tab-amenities">
+                        <?php if (!empty($section['feature_blocks']) && is_array($section['feature_blocks'])) : ?>
+                          <div class="feature-blocks">
+                            <?php foreach ($section['feature_blocks'] as $block) : ?>
+                              <div class="feature-block">
+                                <?php if (!empty($block['block_title'])) : ?>
+                                  <div class="feature-block-title">
+                                    <?php echo $block['block_title']; ?>
+                                  </div>
+                                <?php endif; ?>
+                                <?php if (!empty($block['items']) && is_array($block['items'])) : ?>
+                                  <ul class="feature-items">
+                                    <?php foreach ($block['items'] as $item) : ?>
+                                      <?php if (!empty($item['item'])) : ?>
+                                        <li><?php echo esc_html($item['item']); ?></li>
+                                      <?php endif; ?>
+                                    <?php endforeach; ?>
+                                  </ul>
+                                <?php endif; ?>
+                              </div>
+                            <?php endforeach; ?>
+                          </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($section['show_section_description']) && !empty($section['section_description'])) : ?>
+                          <p class="section-description"><?php echo esc_html($section['section_description']); ?></p>
+                        <?php endif; ?>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                </div>
+                <?php endif; ?>
+
+                <?php
+                // Amenities Tab
+                if (!empty($show_amenities) && !empty($amenities_tab) && is_array($amenities_tab)) :
+                ?>
+                <div class="tab-content" id="tab-amenities" role="tabpanel" aria-labelledby="btn-amenities" tabindex="0" hidden>
                   <h2>Amenities</h2>
-                  <p>Amenities content coming soon.</p>
+                  <div class="amenities-list">
+                    <?php foreach ($amenities_tab as $amenity) : ?>
+                      <div class="amenity-item">
+                        <?php if (!empty($amenity['title'])) : ?>
+                          <h3><?php echo esc_html($amenity['title']); ?></h3>
+                        <?php endif; ?>
+                        <?php if (!empty($amenity['description'])) : ?>
+                          <p><?php echo nl2br(esc_html($amenity['description'])); ?></p>
+                        <?php endif; ?>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
                 </div>
+                <?php endif; ?>
 
-                <div class="tab-content" id="tab-programs">
+                <?php
+                // Programs Tab
+                if (!empty($show_programs) && !empty($programs)) :
+                ?>
+                <div class="tab-content" id="tab-programs" role="tabpanel" aria-labelledby="btn-programs" tabindex="0" hidden>
                   <h2>Programs</h2>
-                  <p>Programs content coming soon.</p>
+                  <div class="programs-content">
+                    <?php echo do_shortcode($programs); ?>
+                  </div>
                 </div>
+                <?php endif; ?>
 
-                <div class="tab-content" id="tab-rentals">
+                <?php
+                // Rentals Tab
+                if (!empty($show_rentals) && !empty($rentals) && is_array($rentals)) :
+                ?>
+                <div class="tab-content" id="tab-rentals" role="tabpanel" aria-labelledby="btn-rentals" tabindex="0" hidden>
                   <h2>Rentals</h2>
-                  <p>Rentals content coming soon.</p>
+                  <div class="rentals-list">
+                    <?php foreach ($rentals as $rental) : ?>
+                      <div class="rental-item">
+                        <h3>
+                          <a href="<?php echo esc_url(get_permalink($rental->ID)); ?>">
+                            <?php echo esc_html($rental->post_title); ?>
+                          </a>
+                        </h3>
+                        <?php if (!empty($rental->post_excerpt)) : ?>
+                          <p><?php echo esc_html($rental->post_excerpt); ?></p>
+                        <?php endif; ?>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
                 </div>
+                <?php endif; ?>
 
-                <div class="tab-content" id="tab-events">
+                <?php
+                // Events Tab
+                if (!empty($show_events) && !empty($events_tab['event_selection_mode'])) :
+                  $event_mode = $events_tab['event_selection_mode'];
+                  $max_events = !empty($events_tab['max_events']) ? intval($events_tab['max_events']) : 3;
+                  $events_query_args = array(
+                    'post_type' => 'tribe_events',
+                    'posts_per_page' => $max_events,
+                    'post_status' => 'publish',
+                    'orderby' => 'event_date',
+                    'order' => 'ASC',
+                    'meta_key' => '_EventStartDate',
+                    'meta_query' => array(
+                      array(
+                        'key' => '_EventStartDate',
+                        'value' => current_time('Y-m-d H:i:s'),
+                        'compare' => '>=',
+                        'type' => 'DATETIME'
+                      )
+                    )
+                  );
+
+                  // Add venue/location filtering based on mode
+                  if ($event_mode === 'venue' && !empty($events_tab['tec_venue'])) {
+                    $events_query_args['meta_query'][] = array(
+                      'key' => '_EventVenueID',
+                      'value' => $events_tab['tec_venue'],
+                      'compare' => '='
+                    );
+                  } elseif ($event_mode === 'location' && !empty($events_tab['linked_location'])) {
+                    // Custom location logic would go here
+                  }
+
+                  $events_query = new WP_Query($events_query_args);
+                ?>
+                <div class="tab-content" id="tab-events" role="tabpanel" aria-labelledby="btn-events" tabindex="0" hidden>
                   <h2>Events</h2>
-                  <p>Events content coming soon.</p>
+                  <div class="events-list" data-max-events="<?php echo esc_attr($max_events); ?>" data-event-mode="<?php echo esc_attr($event_mode); ?>">
+                    <?php if ($events_query->have_posts()) : ?>
+                      <?php while ($events_query->have_posts()) : $events_query->the_post(); ?>
+                        <div class="event-item">
+                          <h3><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h3>
+                          <?php if (function_exists('tribe_get_start_date')) : ?>
+                            <p class="event-date"><?php echo tribe_get_start_date(get_the_ID(), false, 'F j, Y g:i a'); ?></p>
+                          <?php endif; ?>
+                          <?php if (has_excerpt()) : ?>
+                            <p><?php the_excerpt(); ?></p>
+                          <?php endif; ?>
+                        </div>
+                      <?php endwhile; ?>
+                      <?php wp_reset_postdata(); ?>
+                    <?php else : ?>
+                      <p>No upcoming events found.</p>
+                    <?php endif; ?>
+                  </div>
                 </div>
+                <?php endif; ?>
+
+                <?php
+                // FAQs Tab
+                if (!empty($show_faqs) && !empty($faqs) && is_array($faqs)) :
+                ?>
+                <div class="tab-content" id="tab-faqs" role="tabpanel" aria-labelledby="btn-faqs" tabindex="0" hidden>
+                  <h2>FAQs</h2>
+                  <div class="faqs-list">
+                    <?php foreach ($faqs as $index => $faq) : ?>
+                      <div class="faq-item">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-answer-<?php echo esc_attr($index); ?>" id="faq-btn-<?php echo esc_attr($index); ?>">
+                          <?php echo esc_html($faq['title']); ?>
+                        </button>
+                        <div class="faq-answer" id="faq-answer-<?php echo esc_attr($index); ?>" aria-labelledby="faq-btn-<?php echo esc_attr($index); ?>" hidden>
+                          <?php echo $faq['content']; ?>
+                        </div>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                </div>
+                <?php endif; ?>
+
               </div>
 
               <!-- Right Column: Sidebar -->

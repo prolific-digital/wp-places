@@ -73,6 +73,27 @@ function wp_maps_check_facetwp_maps() {
 add_action('admin_init', 'wp_maps_check_facetwp_maps');
 
 /**
+ * Enqueue single place JavaScript for tab interactions and FAQ accordions
+ *
+ * Loads the vanilla JavaScript file that handles tab switching, keyboard navigation,
+ * deep linking, and FAQ accordion functionality on single place pages.
+ *
+ * @return void
+ */
+function wp_maps_enqueue_single_place_scripts() {
+  if (is_singular('places')) {
+    wp_enqueue_script(
+      'wp-places-single',
+      plugin_dir_url(__FILE__) . 'js/single-place.js',
+      array(),
+      '1.0.0',
+      true
+    );
+  }
+}
+add_action('wp_enqueue_scripts', 'wp_maps_enqueue_single_place_scripts');
+
+/**
  * Add FacetWP facets programmatically by decoding and importing a JSON configuration.
  *
  * This filter modifies the existing facets by adding new facets defined in the JSON string.
