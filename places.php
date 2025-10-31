@@ -94,6 +94,79 @@ function wp_maps_enqueue_single_place_scripts() {
 add_action('wp_enqueue_scripts', 'wp_maps_enqueue_single_place_scripts');
 
 /**
+ * Note: Map block JavaScript and CSS are auto-enqueued by ACF via blocks/map/block.json
+ * The block.json file defines:
+ * - "style": ["file:./map.css"] for CSS
+ * - "viewScript": "file:./view.js" for JavaScript
+ * No manual enqueue needed here.
+ */
+
+/**
+ * Index custom fields for FacetWP search
+ *
+ * This ensures the search facet can find places by searching in custom fields
+ * like address, taxonomies, and other metadata.
+ *
+ * @param array $indexer_args The indexer arguments.
+ * @param object $post The post object being indexed.
+ *
+ * @return array Modified indexer arguments.
+ */
+add_filter('facetwp_indexer_post_facet', function($indexer_args, $post) {
+  // Only for places_search facet on places post type
+  if ('places_search' == $indexer_args['facet_name'] && 'places' == $post->post_type) {
+    $defaults = $indexer_args['defaults'];
+
+    // Get taxonomies
+    $location_types = wp_get_post_terms($post->ID, 'location_type', array('fields' => 'names'));
+    $amenities = wp_get_post_terms($post->ID, 'amenities', array('fields' => 'names'));
+    $activities = wp_get_post_terms($post->ID, 'activities', array('fields' => 'names'));
+
+    // Get address field
+    $address = get_field('address', $post->ID);
+    $address_string = '';
+    if ($address && isset($address['address'])) {
+      $address_string = $address['address'];
+    }
+
+    // Combine all searchable content
+    $searchable_content = array(
+      $post->post_title,
+      $post->post_content,
+      $address_string,
+      implode(' ', $location_types),
+      implode(' ', $amenities),
+      implode(' ', $activities)
+    );
+
+    // Add to index
+    $indexer_args['facet_value'] = implode(' ', array_filter($searchable_content));
+    $indexer_args['facet_display_value'] = $post->post_title;
+  }
+
+  return $indexer_args;
+}, 10, 2);
+
+/**
+ * Debug FacetWP query to see what's being filtered
+ */
+add_filter('facetwp_query_args', function($query_args, $class) {
+  error_log('FacetWP Query Args: ' . print_r($query_args, true));
+  error_log('FacetWP Facets: ' . print_r(FWP()->facet->query_args, true));
+  return $query_args;
+}, 10, 2);
+
+/**
+ * Debug what posts are returned after filtering
+ */
+add_action('facetwp_render', function($output, $params) {
+  if (isset($params['facet']) && $params['facet']['name'] == 'location_map') {
+    error_log('Map facet rendering. Post IDs: ' . print_r(FWP()->facet->filtered_post_ids, true));
+  }
+  return $output;
+}, 10, 2);
+
+/**
  * Add FacetWP facets programmatically by decoding and importing a JSON configuration.
  *
  * This filter modifies the existing facets by adding new facets defined in the JSON string.
@@ -108,7 +181,7 @@ add_filter('facetwp_facets', function ($facets) {
 
   // Paste the exported JSON between the single quotes like this: json_decode('PASTE JSON HERE');
   $add_facets = json_decode(
-    '{"facets":[{"name":"location_map","label":"Location Map","type":"map","source":"acf/field_66e1936c43ea9","map_design":"default","btn_label":"","reset_label":"","cluster":"no","ajax_markers":"no","limit":"all","map_width":"100%","map_height":"100%","min_zoom":"1","max_zoom":"20","default_lat":"","default_lng":"","default_zoom":"","marker_content":""},{"name":"location_proximity","label":"Location Proximity","type":"proximity","source":"acf/field_66e1936c43ea9","unit":"mi","radius_ui":"dropdown","radius_options":"10, 25, 50, 100, 250","radius_min":"1","radius_max":"50","radius_default":"25","placeholder":""},{"name":"location_categories","label":"Location Categories","type":"fselect","source":"tax/location_category","label_any":"Any","parent_term":"","modifier_type":"off","modifier_values":"","hierarchical":"no","multiple":"yes","ghosts":"yes","preserve_ghosts":"yes","operator":"and","orderby":"count","count":"10"},{"name":"location_types","label":"Location Types","type":"checkboxes","source":"tax/location_type","label_any":"Any","parent_term":"","modifier_type":"off","modifier_values":"","hierarchical":"no","multiple":"yes","ghosts":"yes","preserve_ghosts":"yes","operator":"and","orderby":"display_order","count":"10","soft_limit":"5"},{"name":"amenities","label":"Amenities","type":"checkboxes","source":"tax/amenities","label_any":"Any","parent_term":"","modifier_type":"off","modifier_values":"","hierarchical":"no","multiple":"yes","ghosts":"yes","preserve_ghosts":"yes","operator":"and","orderby":"display_order","count":"10","soft_limit":"5"},{"name":"activities","label":"Activities","type":"checkboxes","source":"tax/activities","label_any":"Any","parent_term":"","modifier_type":"off","modifier_values":"","hierarchical":"no","multiple":"yes","ghosts":"yes","preserve_ghosts":"yes","operator":"and","orderby":"display_order","count":"10","soft_limit":"5"}]}',
+    '{"facets":[{"name":"location_map","label":"Location Map","type":"map","source":"acf/field_66e1936c43ea9","map_design":"default","btn_label":"","reset_label":"","cluster":"no","ajax_markers":"no","limit":"all","map_width":"100%","map_height":"100%","min_zoom":"1","max_zoom":"20","default_lat":"","default_lng":"","default_zoom":"","marker_content":""},{"name":"location_proximity","label":"Location Proximity","type":"proximity","source":"acf/field_66e1936c43ea9","unit":"mi","radius_ui":"dropdown","radius_options":"10, 25, 50, 100, 250","radius_min":"1","radius_max":"50","radius_default":"25","placeholder":""},{"name":"location_categories","label":"Location Categories","type":"fselect","source":"tax/location_category","label_any":"Any","parent_term":"","modifier_type":"off","modifier_values":"","hierarchical":"no","multiple":"yes","ghosts":"yes","preserve_ghosts":"yes","operator":"and","orderby":"count","count":"10"},{"name":"location_types","label":"Location Types","type":"checkboxes","source":"tax/location_type","label_any":"Any","parent_term":"","modifier_type":"off","modifier_values":"","hierarchical":"no","multiple":"yes","ghosts":"yes","preserve_ghosts":"yes","operator":"and","orderby":"display_order","count":"10","soft_limit":"5"},{"name":"amenities","label":"Amenities","type":"checkboxes","source":"tax/amenities","label_any":"Any","parent_term":"","modifier_type":"off","modifier_values":"","hierarchical":"no","multiple":"yes","ghosts":"yes","preserve_ghosts":"yes","operator":"and","orderby":"display_order","count":"10","soft_limit":"5"},{"name":"activities","label":"Activities","type":"checkboxes","source":"tax/activities","label_any":"Any","parent_term":"","modifier_type":"off","modifier_values":"","hierarchical":"no","multiple":"yes","ghosts":"yes","preserve_ghosts":"yes","operator":"and","orderby":"display_order","count":"10","soft_limit":"5"},{"name":"places_search","label":"Search Places","type":"search","source":"","search_engine":"default","placeholder":"Search for our Facilities here...","auto_refresh":"yes"}]}',
     true
   );
 

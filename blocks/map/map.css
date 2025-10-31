@@ -1,69 +1,40 @@
-/* General Styling */
+/* ===================================
+   CSS Variables for Easy Customization
+   =================================== */
+:root {
+  --filter-panel-bg: rgba(45, 79, 79, 0.95);
+  --filter-panel-text: #ffffff;
+  --button-green: #6bc9a0;
+  --button-green-hover: #5ab590;
+  --section-border: rgba(255, 255, 255, 0.2);
+  --input-bg: #ffffff;
+  --input-border: #cccccc;
+}
+
+/* ===================================
+   General Map Block Styling
+   =================================== */
 .block-map {
   position: relative;
   width: 100vw;
   height: calc(100vh - 100px);
+  overflow: hidden;
 }
 
 .block-map * {
   box-sizing: border-box;
 }
 
-.facet.panel {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  max-width: 320px;
-  height: 100%;
-  z-index: 100;
-  padding: 80px 20px 20px 20px;
-  background-color: gray;
-  transition: all 300ms ease-in-out;
-}
-
-.panel-content {
-  position: relative;
-  height: 100%;
-  overflow: scroll;
-}
-
-.toggle-panel {
-  display: none;
-  position: relative;
-  z-index: 100;
-  padding: 10px 20px;
-  margin: 20px;
-  cursor: pointer;
-  z-index: 200;
-}
-
-@media screen and (max-width: 768px) {
-  .toggle-panel {
-    display: block;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .facet.panel {
-    transform: translateX(-320px);
-  }
-}
-
-.facet.panel.open {
-  transform: translateX(0);
-}
-
+/* ===================================
+   Map Container
+   =================================== */
 .facet.custom-map {
   width: 100%;
+  height: 100%;
 }
 
 .facetwp-facet-location_map {
   height: calc(100vh - 100px);
-}
-
-.facetwp-map-filtering {
-  display: none;
 }
 
 #facetwp-map {
@@ -71,24 +42,323 @@
   height: 100%;
 }
 
-/* Editor Message */
+.facetwp-map-filtering {
+  display: none;
+}
+
+/* ===================================
+   Filter Panel Overlay
+   =================================== */
+.filter-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  max-width: 320px;
+  height: 100%;
+  z-index: 1000;
+  background-color: var(--filter-panel-bg);
+  color: var(--filter-panel-text);
+  overflow: hidden;
+  transform: translateX(-100%);
+  transition: transform 300ms ease-in-out;
+}
+
+.filter-panel.is-open {
+  transform: translateX(0);
+}
+
+.filter-panel[hidden] {
+  display: none;
+}
+
+/* Filter Panel Content */
+.filter-panel-content {
+  position: relative;
+  height: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Close Button */
+.filter-panel-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  color: var(--filter-panel-text);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 5px 10px;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.filter-panel-close:hover,
+.filter-panel-close:focus {
+  opacity: 0.7;
+  outline: 2px solid var(--button-green);
+  outline-offset: 2px;
+}
+
+/* Panel Heading */
+.filter-panel-heading {
+  margin: 0 0 20px 0;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--section-border);
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--filter-panel-text);
+}
+
+/* Filter Sections Container */
+.filter-sections {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+/* Individual Filter Section */
+.filter-section {
+  border-bottom: 1px solid var(--section-border);
+}
+
+/* Section Toggle Button */
+.filter-section-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 15px 0;
+  background: transparent;
+  border: none;
+  color: var(--filter-panel-text);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.filter-section-toggle:hover,
+.filter-section-toggle:focus {
+  opacity: 0.8;
+  outline: none;
+}
+
+.filter-section-toggle:focus-visible {
+  outline: 2px solid var(--button-green);
+  outline-offset: 2px;
+}
+
+.filter-section-title {
+  flex: 1;
+}
+
+.filter-section-icon {
+  font-size: 20px;
+  line-height: 1;
+  margin-left: 10px;
+}
+
+/* Section Content */
+.filter-section-content {
+  padding: 0 0 15px 0;
+}
+
+.filter-section-content[hidden] {
+  display: none;
+}
+
+/* FacetWP Facet Styling Within Sections */
+.filter-section-content .facetwp-facet {
+  margin: 0;
+}
+
+.filter-section-content .facetwp-checkbox {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  color: var(--filter-panel-text);
+}
+
+.filter-section-content .facetwp-checkbox input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.filter-section-content .facetwp-checkbox label {
+  cursor: pointer;
+  color: var(--filter-panel-text);
+}
+
+/* Proximity Facet Styling */
+.filter-section-content .facetwp-facet-location_proximity input,
+.filter-section-content .facetwp-facet-location_proximity select {
+  width: 100%;
+  padding: 8px;
+  margin: 5px 0;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Apply Filter Button */
+.filter-apply-btn {
+  width: 100%;
+  padding: 12px 20px;
+  background-color: var(--button-green);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: auto;
+}
+
+.filter-apply-btn:hover,
+.filter-apply-btn:focus {
+  background-color: var(--button-green-hover);
+  outline: none;
+}
+
+.filter-apply-btn:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+/* ===================================
+   Search Bar (Bottom of Map)
+   =================================== */
+.map-search-bar {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  width: 90%;
+  max-width: 600px;
+}
+
+.search-bar-content {
+  display: flex;
+  gap: 10px;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  align-items: center;
+}
+
+.search-group {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  align-items: center;
+}
+
+.search-input-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+/* Style the FacetWP search input */
+.search-input-wrapper .facetwp-facet {
+  width: 100%;
+}
+
+.search-input-wrapper .facetwp-search {
+  width: 100%;
+  padding: 12px 40px 12px 15px;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  font-size: 16px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.search-input-wrapper .facetwp-search:focus {
+  border-color: var(--button-green);
+  outline: 2px solid var(--button-green);
+  outline-offset: -2px;
+}
+
+/* Hide the default FacetWP search icon */
+.search-input-wrapper .facetwp-icon {
+  display: none;
+}
+
+.search-btn,
+.filter-toggle-btn {
+  padding: 12px 24px;
+  background-color: var(--button-green);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.search-btn:hover,
+.search-btn:focus,
+.filter-toggle-btn:hover,
+.filter-toggle-btn:focus {
+  background-color: var(--button-green-hover);
+  outline: none;
+}
+
+.search-btn:focus-visible,
+.filter-toggle-btn:focus-visible {
+  outline: 2px solid #333;
+  outline-offset: 2px;
+}
+
+/* ===================================
+   Editor Message (Block Preview)
+   =================================== */
 .editor-message {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
   height: 100%;
+  background: #f5f5f5;
 }
 
 .message {
   text-align: center;
+  padding: 20px;
 }
 
-/* Location Listing */
+/* ===================================
+   Location Listing (Hidden by Default)
+   =================================== */
 .location-listing {
-  position: relative;
-  overflow: scroll;
-  height: calc(100% - 200px);
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  max-width: 400px;
+  height: 100%;
+  overflow-y: auto;
+  background: white;
+  padding: 20px;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 900;
+}
+
+.location-listing[hidden] {
+  display: none;
 }
 
 /* Location Item */
@@ -102,10 +372,35 @@
 
 /* Location Title */
 .location-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   margin: 0 0 10px 0;
   color: #333;
+}
+
+.location-title a {
+  color: #333;
+  text-decoration: none;
+}
+
+.location-title a:hover {
+  color: var(--button-green);
+}
+
+/* Location Categories */
+.location-categories {
+  margin-bottom: 10px;
+}
+
+.location-category {
+  display: inline-block;
+  background-color: var(--button-green);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-right: 5px;
+  font-weight: 600;
 }
 
 /* Address Styling */
@@ -122,8 +417,9 @@
 }
 
 .location-phone a {
-  color: #007bff;
+  color: var(--button-green);
   text-decoration: none;
+  font-weight: 600;
 }
 
 .location-phone a:hover {
@@ -132,7 +428,7 @@
 
 /* Location Details */
 .location-details {
-  font-size: 16px;
+  font-size: 14px;
   margin: 15px 0;
   color: #444;
 }
@@ -142,55 +438,58 @@
   display: inline-block;
   margin-top: 10px;
   padding: 8px 15px;
-  background-color: #007bff;
+  background-color: var(--button-green);
   color: #fff;
   text-decoration: none;
   border-radius: 4px;
+  font-weight: 600;
+  transition: background-color 0.2s;
 }
 
 .location-view-more a:hover {
-  background-color: #0056b3;
+  background-color: var(--button-green-hover);
 }
 
-/* Marker Styling */
+/* ===================================
+   Map Marker Popup Styling
+   =================================== */
 .marker-categories {
   margin-bottom: 10px;
 }
 
-.marker-category,
-.location-category {
+.marker-category {
   display: inline-block;
-  background-color: #f1f1f1;
-  color: #333;
-  padding: 5px 10px;
+  background-color: var(--button-green);
+  color: white;
+  padding: 4px 10px;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 12px;
   margin-right: 5px;
+  font-weight: 600;
 }
 
-/* Marker Title */
 .marker-title {
   font-size: 16px;
   font-weight: bold;
   margin: 0 0 5px;
 }
 
-/* Marker Address */
 .marker-address {
   margin: 0 0 5px;
+  font-size: 14px;
+  color: #666;
 }
 
-/* Marker Phone */
 .marker-phone {
   margin-top: 5px;
+  font-size: 14px;
 }
 
-/* Marker Details */
 .marker-details {
   margin-top: 10px;
+  font-size: 14px;
 }
 
-/* Marker View More */
 .marker-view-more {
   margin-top: 10px;
 }
@@ -198,4 +497,81 @@
 .marker-category-title {
   font-size: 14px;
   color: #666;
+}
+
+/* ===================================
+   Responsive Breakpoints
+   =================================== */
+
+/* Tablet and Below */
+@media screen and (max-width: 768px) {
+  .map-search-bar {
+    bottom: 20px;
+    width: 95%;
+  }
+
+  .search-bar-content {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .search-btn,
+  .filter-toggle-btn {
+    width: 100%;
+  }
+
+  .filter-panel {
+    max-width: 280px;
+  }
+
+  .location-listing {
+    max-width: 100%;
+  }
+}
+
+/* Mobile */
+@media screen and (max-width: 480px) {
+  .filter-panel {
+    max-width: 100%;
+  }
+
+  .filter-panel-content {
+    padding: 15px;
+  }
+
+  .map-search-bar {
+    bottom: 10px;
+  }
+}
+
+/* ===================================
+   Accessibility Enhancements
+   =================================== */
+
+/* Focus Visible States */
+*:focus-visible {
+  outline: 2px solid var(--button-green);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .filter-panel,
+  .search-btn,
+  .filter-toggle-btn,
+  .filter-apply-btn,
+  .filter-section-toggle {
+    transition: none;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .filter-panel {
+    border: 2px solid white;
+  }
+
+  .filter-section {
+    border-bottom-width: 2px;
+  }
 }
