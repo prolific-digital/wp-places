@@ -415,6 +415,7 @@ function wp_maps_create_places_post_type() {
     'menu_icon'             => 'dashicons-location-alt',
     'has_archive'           => true,
     'publicly_queryable'    => true,
+    'show_in_rest'          => true,
     'rewrite'               => array(
       'slug'       => 'places/%location_category%',
       'with_front' => false
@@ -454,6 +455,7 @@ function wp_maps_create_location_categories_taxonomy() {
     'public'            => true,
     'show_ui'           => true,
     'show_admin_column' => true,
+    'show_in_rest'      => true,
     'rewrite'           => array(
       'slug'       => 'places',
       'with_front' => false
