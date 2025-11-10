@@ -407,7 +407,7 @@ function wp_maps_create_places_post_type() {
     'label'                 => __('Place', 'wp-maps'),
     'description'           => __('Post type for places (parks, facilities, etc.)', 'wp-maps'),
     'labels'                => $labels,
-    'supports'              => array('title', 'editor', 'thumbnail', 'revisions'),
+    'supports'              => array('title', 'excerpt', 'thumbnail', 'revisions'),
     'taxonomies'            => array('location_category', 'location_type', 'amenities', 'activities'),
     'public'                => true,
     'show_ui'               => true,
