@@ -17,6 +17,9 @@ if (!defined('WPINC')) {
 // import acf-fields.php
 require_once plugin_dir_path(__FILE__) . 'acf-fields.php';
 
+// Import TEC Venue Sync class
+require_once plugin_dir_path(__FILE__) . 'includes/class-tec-venue-sync.php';
+
 /**
  * Display admin notice if ACF Pro is not installed or activated.
  *
@@ -369,6 +372,19 @@ add_filter('facetwp_map_marker_args', function ($args, $post_id) {
 add_action('init', 'register_acf_blocks');
 function register_acf_blocks() {
   register_block_type(__DIR__ . '/blocks/map');
+}
+
+/**
+ * Initialize TEC Venue Sync
+ *
+ * Initializes the bidirectional sync between Places and The Events Calendar venues.
+ * This allows places to automatically create and update TEC venues with their address data.
+ *
+ * @return void
+ */
+add_action('plugins_loaded', 'wp_places_init_tec_venue_sync');
+function wp_places_init_tec_venue_sync() {
+  \WP_Places\TEC_Venue_Sync::init();
 }
 
 /**

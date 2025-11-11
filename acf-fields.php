@@ -1010,6 +1010,36 @@ add_action('acf/include_fields', function () {
         'bidirectional_target' => array(),
       ),
       array(
+        'key' => 'field_672rent000002',
+        'label' => 'Rentals Per Page',
+        'name' => 'rentals_per_page',
+        'aria-label' => '',
+        'type' => 'number',
+        'instructions' => 'Maximum number of rental items to show per page. Pagination will appear if there are more rentals than this limit.',
+        'required' => 0,
+        'conditional_logic' => array(
+          array(
+            array(
+              'field' => 'field_672tab000006',
+              'operator' => '==',
+              'value' => '1',
+            ),
+          ),
+        ),
+        'wrapper' => array(
+          'width' => '',
+          'class' => '',
+          'id' => '',
+        ),
+        'default_value' => 4,
+        'min' => 1,
+        'max' => '',
+        'step' => 1,
+        'placeholder' => '',
+        'prepend' => '',
+        'append' => '',
+      ),
+      array(
         'key' => 'field_672acc_rentals_end',
         'label' => 'Accordion End',
         'name' => '',
