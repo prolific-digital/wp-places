@@ -41,8 +41,17 @@ class TEC_Venue_Sync {
 		// AJAX handler for dismissing migration notice
 		add_action( 'wp_ajax_tec_venue_migration_dismiss', array( __CLASS__, 'ajax_dismiss_notice' ) );
 
+		// AJAX handler for fixing broken events
+		add_action( 'wp_ajax_tec_fix_broken_events', array( __CLASS__, 'ajax_fix_broken_events' ) );
+
+		// AJAX handler for dismissing broken events notice
+		add_action( 'wp_ajax_tec_fix_broken_events_dismiss', array( __CLASS__, 'ajax_dismiss_broken_events_notice' ) );
+
 		// Show migration notice
 		add_action( 'admin_notices', array( __CLASS__, 'show_migration_notice' ) );
+
+		// Show broken events notice
+		add_action( 'admin_notices', array( __CLASS__, 'show_broken_events_notice' ) );
 	}
 
 	/**
@@ -375,11 +384,14 @@ class TEC_Venue_Sync {
 
 		$deleted_count = 0;
 		$created_count = 0;
+		$events_updated = 0;
 
 		// Set syncing flag to prevent hooks from firing during migration
 		self::$syncing = true;
 
-		// Step 1: Delete all existing venues
+		// Step 1: Build a map of old venue IDs to their linked places
+		$venue_to_place_map = array();
+
 		$existing_venues = get_posts( array(
 			'post_type'      => 'tribe_venue',
 			'posts_per_page' => -1,
@@ -387,8 +399,10 @@ class TEC_Venue_Sync {
 		) );
 
 		foreach ( $existing_venues as $venue ) {
-			wp_delete_post( $venue->ID, true ); // Force delete
-			$deleted_count++;
+			$linked_place = get_post_meta( $venue->ID, '_linked_place', true );
+			if ( $linked_place ) {
+				$venue_to_place_map[ $venue->ID ] = $linked_place;
+			}
 		}
 
 		// Step 2: Create venues from all places
@@ -397,6 +411,8 @@ class TEC_Venue_Sync {
 			'posts_per_page' => -1,
 			'post_status'    => 'publish',
 		) );
+
+		$place_to_new_venue_map = array();
 
 		foreach ( $places as $place ) {
 			$place_id = $place->ID;
@@ -419,6 +435,9 @@ class TEC_Venue_Sync {
 				// Link venue to place
 				update_post_meta( $place_id, '_linked_tec_venue', $venue_id );
 				update_post_meta( $venue_id, '_linked_place', $place_id );
+
+				// Store in map for event reassignment
+				$place_to_new_venue_map[ $place_id ] = $venue_id;
 
 				// Parse and update address
 				if ( ! empty( $address ) && is_array( $address ) ) {
@@ -457,6 +476,42 @@ class TEC_Venue_Sync {
 			}
 		}
 
+		// Step 3: Update all events to use new venue IDs
+		foreach ( $venue_to_place_map as $old_venue_id => $place_id ) {
+			// Check if we created a new venue for this place
+			if ( ! isset( $place_to_new_venue_map[ $place_id ] ) ) {
+				continue;
+			}
+
+			$new_venue_id = $place_to_new_venue_map[ $place_id ];
+
+			// Find all events using the old venue
+			$events_with_old_venue = get_posts( array(
+				'post_type'      => 'tribe_events',
+				'posts_per_page' => -1,
+				'post_status'    => 'any',
+				'meta_query'     => array(
+					array(
+						'key'     => '_EventVenueID',
+						'value'   => $old_venue_id,
+						'compare' => '=',
+					),
+				),
+			) );
+
+			// Update each event to use the new venue
+			foreach ( $events_with_old_venue as $event ) {
+				update_post_meta( $event->ID, '_EventVenueID', $new_venue_id );
+				$events_updated++;
+			}
+		}
+
+		// Step 4: Delete all old venues (now that events are reassigned)
+		foreach ( $existing_venues as $venue ) {
+			wp_delete_post( $venue->ID, true ); // Force delete
+			$deleted_count++;
+		}
+
 		// Reset syncing flag
 		self::$syncing = false;
 
@@ -466,13 +521,234 @@ class TEC_Venue_Sync {
 		return array(
 			'success' => true,
 			'message' => sprintf(
-				/* translators: 1: deleted count, 2: created count */
-				__( 'Migration complete! Deleted %1$d old venues and created %2$d new venues from places.', 'wp-places' ),
+				/* translators: 1: deleted count, 2: created count, 3: events updated */
+				__( 'Migration complete! Deleted %1$d old venues, created %2$d new venues from places, and updated %3$d events.', 'wp-places' ),
 				$deleted_count,
-				$created_count
+				$created_count,
+				$events_updated
 			),
 			'deleted' => $deleted_count,
 			'created' => $created_count,
+			'events_updated' => $events_updated,
+		);
+	}
+
+	/**
+	 * Show notice for broken events (events with invalid venue IDs)
+	 */
+	public static function show_broken_events_notice() {
+		// Only show to administrators
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		// Don't show if migration hasn't been run yet
+		if ( ! get_option( 'tec_venue_migration_complete' ) ) {
+			return;
+		}
+
+		// Check if user dismissed the notice
+		if ( get_user_meta( get_current_user_id(), 'tec_broken_events_dismissed', true ) ) {
+			return;
+		}
+
+		// Check if fix has already been run
+		if ( get_option( 'tec_broken_events_fixed' ) ) {
+			return;
+		}
+
+		// Check if TEC is active
+		if ( ! class_exists( 'Tribe__Events__Main' ) ) {
+			return;
+		}
+
+		// Check if there are actually broken events
+		$broken_events = self::get_broken_events_count();
+		if ( $broken_events === 0 ) {
+			// No broken events, mark as fixed
+			update_option( 'tec_broken_events_fixed', true );
+			return;
+		}
+
+		?>
+		<div class="notice notice-error is-dismissible" id="tec-broken-events-notice">
+			<p>
+				<strong><?php esc_html_e( 'TEC Events Have Invalid Venues', 'wp-places' ); ?></strong>
+			</p>
+			<p>
+				<?php
+				printf(
+					/* translators: %d: number of broken events */
+					esc_html__( 'Found %d events with invalid venue references. This is causing errors on the frontend.', 'wp-places' ),
+					$broken_events
+				);
+				?>
+			</p>
+			<p>
+				<?php esc_html_e( 'Click below to clear invalid venue references from these events. You can reassign venues to events after this fix.', 'wp-places' ); ?>
+			</p>
+			<p>
+				<button type="button" class="button button-primary" id="tec-fix-broken-events">
+					<?php esc_html_e( 'Fix Broken Events', 'wp-places' ); ?>
+				</button>
+				<button type="button" class="button" id="tec-broken-events-dismiss">
+					<?php esc_html_e( 'Dismiss', 'wp-places' ); ?>
+				</button>
+				<span class="spinner" style="float: none; margin: 0 10px;"></span>
+			</p>
+		</div>
+		<script>
+		jQuery(document).ready(function($) {
+			$('#tec-fix-broken-events').on('click', function() {
+				var $button = $(this);
+				var $spinner = $button.siblings('.spinner');
+
+				$button.prop('disabled', true);
+				$spinner.addClass('is-active');
+
+				$.post(ajaxurl, {
+					action: 'tec_fix_broken_events',
+					nonce: '<?php echo esc_js( wp_create_nonce( 'tec_fix_broken_events' ) ); ?>'
+				}, function(response) {
+					$spinner.removeClass('is-active');
+					if (response.success) {
+						$('#tec-broken-events-notice').addClass('notice-success').removeClass('notice-error');
+						$('#tec-broken-events-notice p:last').html('<strong>' + response.data.message + '</strong>');
+						setTimeout(function() {
+							$('#tec-broken-events-notice').fadeOut();
+						}, 3000);
+					} else {
+						alert(response.data.message);
+						$button.prop('disabled', false);
+					}
+				});
+			});
+
+			$('#tec-broken-events-dismiss').on('click', function() {
+				$.post(ajaxurl, {
+					action: 'tec_fix_broken_events_dismiss',
+					nonce: '<?php echo esc_js( wp_create_nonce( 'tec_fix_broken_events_dismiss' ) ); ?>'
+				});
+				$('#tec-broken-events-notice').fadeOut();
+			});
+		});
+		</script>
+		<?php
+	}
+
+	/**
+	 * Get count of events with invalid venue IDs
+	 *
+	 * @return int Number of broken events.
+	 */
+	private static function get_broken_events_count() {
+		global $wpdb;
+
+		// Get all events with venue IDs
+		$events_with_venues = $wpdb->get_results(
+			"SELECT post_id, meta_value as venue_id
+			FROM {$wpdb->postmeta}
+			WHERE meta_key = '_EventVenueID'
+			AND meta_value != ''
+			AND meta_value != '0'"
+		);
+
+		$broken_count = 0;
+
+		foreach ( $events_with_venues as $event_venue ) {
+			// Check if the venue still exists
+			$venue_exists = get_post_status( $event_venue->venue_id );
+			if ( ! $venue_exists ) {
+				$broken_count++;
+			}
+		}
+
+		return $broken_count;
+	}
+
+	/**
+	 * AJAX handler for fixing broken events
+	 */
+	public static function ajax_fix_broken_events() {
+		check_ajax_referer( 'tec_fix_broken_events', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wp-places' ) ) );
+		}
+
+		$result = self::fix_broken_events();
+
+		if ( $result['success'] ) {
+			wp_send_json_success( $result );
+		} else {
+			wp_send_json_error( $result );
+		}
+	}
+
+	/**
+	 * AJAX handler for dismissing broken events notice
+	 */
+	public static function ajax_dismiss_broken_events_notice() {
+		check_ajax_referer( 'tec_fix_broken_events_dismiss', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die();
+		}
+
+		// Set user meta to hide notice permanently
+		update_user_meta( get_current_user_id(), 'tec_broken_events_dismissed', true );
+
+		wp_send_json_success();
+	}
+
+	/**
+	 * Fix events with invalid venue IDs by clearing the venue reference
+	 *
+	 * @return array Result with success status and message.
+	 */
+	public static function fix_broken_events() {
+		global $wpdb;
+
+		// Check if TEC is active
+		if ( ! class_exists( 'Tribe__Events__Main' ) ) {
+			return array(
+				'success' => false,
+				'message' => __( 'The Events Calendar is not active.', 'wp-places' ),
+			);
+		}
+
+		// Get all events with venue IDs
+		$events_with_venues = $wpdb->get_results(
+			"SELECT post_id, meta_value as venue_id
+			FROM {$wpdb->postmeta}
+			WHERE meta_key = '_EventVenueID'
+			AND meta_value != ''
+			AND meta_value != '0'"
+		);
+
+		$fixed_count = 0;
+
+		foreach ( $events_with_venues as $event_venue ) {
+			// Check if the venue still exists
+			$venue_exists = get_post_status( $event_venue->venue_id );
+			if ( ! $venue_exists ) {
+				// Clear the invalid venue reference
+				delete_post_meta( $event_venue->post_id, '_EventVenueID' );
+				$fixed_count++;
+			}
+		}
+
+		// Mark fix as complete
+		update_option( 'tec_broken_events_fixed', true );
+
+		return array(
+			'success' => true,
+			'message' => sprintf(
+				/* translators: %d: number of events fixed */
+				__( 'Fixed %d events by clearing invalid venue references. You can now reassign venues to these events.', 'wp-places' ),
+				$fixed_count
+			),
+			'fixed' => $fixed_count,
 		);
 	}
 }

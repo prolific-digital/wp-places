@@ -85,16 +85,212 @@ add_action('admin_init', 'wp_maps_check_facetwp_maps');
  */
 function wp_maps_enqueue_single_place_scripts() {
   if (is_singular('places')) {
-    wp_enqueue_script(
-      'wp-places-single',
-      plugin_dir_url(__FILE__) . 'js/single-place.js',
-      array(),
-      '1.0.0',
-      true
-    );
+    // Add FacetWP template management to prevent pagination cross-contamination
+    if (function_exists('facetwp_display')) {
+      add_action('wp_footer', function() {
+        ?>
+        <style>
+        .custom-pager {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          justify-content: center;
+          margin-top: 30px;
+        }
+        .custom-page {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 32px;
+          height: 32px;
+          padding: 4px 8px;
+          border: 1px solid #ddd;
+          background: #fff;
+          color: #2C4E3F;
+          text-decoration: none;
+          border-radius: 4px;
+          font-size: 14px;
+          font-weight: 500;
+          transition: all 0.2s ease;
+        }
+        .custom-page:hover {
+          background: #f5f5f5;
+          border-color: #2C4E3F;
+        }
+        .custom-page.active {
+          background: #2C4E3F;
+          color: #fff;
+          border-color: #2C4E3F;
+          cursor: default;
+        }
+        .custom-page.prev svg,
+        .custom-page.next svg {
+          display: block;
+        }
+        .custom-page.prev,
+        .custom-page.next {
+          padding: 4px 12px;
+        }
+        </style>
+        <script>
+        (function() {
+          // Custom Pagination Class
+          class TabPagination {
+            constructor(options) {
+              this.container = options.container;
+              this.itemSelector = options.itemSelector;
+              this.paginationSelector = options.paginationSelector;
+              this.urlParam = options.urlParam;
+              this.currentPage = 1;
+              this.perPage = parseInt(this.container.querySelector(this.paginationSelector).dataset.perPage) || 4;
+              this.totalItems = parseInt(this.container.querySelector(this.paginationSelector).dataset.total) || 0;
+              this.totalPages = Math.ceil(this.totalItems / this.perPage);
+
+              this.init();
+            }
+
+            init() {
+              // Check URL for initial page
+              const urlParams = new URLSearchParams(window.location.search);
+              if (urlParams.has(this.urlParam)) {
+                this.currentPage = parseInt(urlParams.get(this.urlParam)) || 1;
+              }
+
+              // Render pagination controls
+              this.renderControls();
+
+              // Show correct page
+              this.showPage(this.currentPage);
+            }
+
+            showPage(pageNum) {
+              this.currentPage = Math.max(1, Math.min(pageNum, this.totalPages));
+
+              // Hide all items
+              const items = this.container.querySelectorAll(this.itemSelector);
+              items.forEach(item => {
+                const itemPage = parseInt(item.dataset.page);
+                if (itemPage === this.currentPage) {
+                  item.style.display = '';
+                } else {
+                  item.style.display = 'none';
+                }
+              });
+
+              // Update URL
+              this.updateURL();
+
+              // Re-render controls to update active state
+              this.renderControls();
+            }
+
+            renderControls() {
+              const paginationDiv = this.container.querySelector(this.paginationSelector);
+              if (!paginationDiv || this.totalPages <= 1) return;
+
+              let html = '<div class="custom-pager">';
+
+              // Previous arrow (SVG from rental-wp plugin)
+              if (this.currentPage > 1) {
+                html += `<a class="custom-page prev" data-page="${this.currentPage - 1}" href="#" aria-label="Previous page">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="9" height="11" viewBox="0 0 9 11" fill="none">
+                    <path d="M-2.40413e-07 5.5L8.25 0.736861L8.25 10.2631L-2.40413e-07 5.5Z" fill="#2C4E3F"></path>
+                  </svg>
+                </a>`;
+              }
+
+              // Page numbers
+              for (let i = 1; i <= this.totalPages; i++) {
+                const activeClass = i === this.currentPage ? ' active' : '';
+                html += `<a class="custom-page${activeClass}" data-page="${i}" href="#">${i}</a>`;
+              }
+
+              // Next arrow
+              if (this.currentPage < this.totalPages) {
+                html += `<a class="custom-page next" data-page="${this.currentPage + 1}" href="#" aria-label="Next page">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="9" height="11" viewBox="0 0 9 11" fill="none">
+                    <path d="M9 5.5L0.749999 10.2631L0.749999 0.73686L9 5.5Z" fill="#2C4E3F"></path>
+                  </svg>
+                </a>`;
+              }
+
+              html += '</div>';
+              paginationDiv.innerHTML = html;
+
+              // Attach click handlers
+              paginationDiv.querySelectorAll('.custom-page').forEach(link => {
+                link.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  const page = parseInt(link.dataset.page);
+                  if (page && page !== this.currentPage) {
+                    this.showPage(page);
+                  }
+                });
+              });
+            }
+
+            updateURL() {
+              const url = new URL(window.location.href);
+              if (this.currentPage > 1) {
+                url.searchParams.set(this.urlParam, this.currentPage);
+              } else {
+                url.searchParams.delete(this.urlParam);
+              }
+              history.pushState(null, '', url.toString());
+            }
+          }
+
+          // Initialize on DOM ready
+          document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Rentals pagination
+            const rentalsTab = document.getElementById('tab-rentals');
+            if (rentalsTab && rentalsTab.querySelector('.rentals-pagination')) {
+              new TabPagination({
+                container: rentalsTab,
+                itemSelector: '.rental-card',
+                paginationSelector: '.rentals-pagination',
+                urlParam: 'rentals_page'
+              });
+            }
+
+            // Initialize Events pagination
+            const eventsTab = document.getElementById('tab-events');
+            if (eventsTab && eventsTab.querySelector('.events-pagination')) {
+              new TabPagination({
+                container: eventsTab,
+                itemSelector: '.tribe-events-calendar-list > li',
+                paginationSelector: '.events-pagination',
+                urlParam: 'events_page'
+              });
+            }
+
+            // Handle tab switches - open correct tab based on URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('rentals_page')) {
+              const rentalsTabBtn = document.querySelector('[aria-controls="rentals"]');
+              if (rentalsTabBtn && rentalsTabBtn.getAttribute('aria-selected') !== 'true') {
+                rentalsTabBtn.click();
+              }
+            } else if (urlParams.has('events_page')) {
+              const eventsTabBtn = document.querySelector('[aria-controls="events"]');
+              if (eventsTabBtn && eventsTabBtn.getAttribute('aria-selected') !== 'true') {
+                eventsTabBtn.click();
+              }
+            }
+          });
+
+        })();
+        </script>
+        <?php
+      });
+    }
   }
 }
 add_action('wp_enqueue_scripts', 'wp_maps_enqueue_single_place_scripts');
+
+
+
+// Removed PHP filters - pagination is now handled via JavaScript hooks in wp_footer
 
 /**
  * Note: Map block JavaScript and CSS are auto-enqueued by ACF via blocks/map/block.json

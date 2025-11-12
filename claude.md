@@ -11,6 +11,8 @@ wp-places-initial-alpha/
 ├── places.php                 # Main plugin file
 ├── acf-fields.php            # ACF field definitions
 ├── single-places.php         # Single place template
+├── includes/
+│   └── class-tec-venue-sync.php # TEC venue sync integration
 ├── blocks/
 │   └── map/
 │       ├── block.php         # Interactive map block template
@@ -1040,7 +1042,69 @@ All repeater fields start with 1 empty row, so editors can immediately begin add
 
 ## Version History
 
-### Phase 3: Map Filter UI Enhancement (Current)
+### Phase 5: Custom JavaScript Pagination (Current)
+- **Problem Solved**: FacetWP's architecture doesn't support multiple paginated templates on a single page
+  - FacetWP uses single global `FWP.paged` variable for entire page
+  - Both Rentals and Events tabs shared same pagination state
+  - Clicking page 2 on Rentals caused content to disappear or show Events
+- **Solution**: Replaced FacetWP pagination with custom JavaScript implementation
+  - Created `TabPagination` class for reusable pagination component
+  - Independent page state for Rentals (`?rentals_page=2`) and Events (`?events_page=3`)
+  - Show/hide logic instead of AJAX (instant page switching)
+  - Deep linking support (opens correct tab based on URL parameter)
+  - Custom styled controls with green SVG arrows matching design system
+- **Technical Implementation**:
+  - Added `data-page` attribute to each rental card and event item
+  - Added `data-total` and `data-per-page` attributes to pagination containers
+  - Changed WP_Query from limited `posts_per_page` to `-1` (get all items)
+  - Removed `'facetwp' => true` from query arguments
+  - JavaScript calculates which items to show based on current page
+  - URL management with History API for shareable links
+- **Benefits**:
+  - ✅ Simpler than FacetWP (no AJAX, no server requests)
+  - ✅ Faster (instant page switching with show/hide)
+  - ✅ Independent tab states (no cross-contamination)
+  - ✅ Cleaner URLs (`?rentals_page=2` vs `?_paged=2`)
+  - ✅ Lightweight (~150 lines of vanilla JavaScript)
+
+**Modified Files:**
+- `places.php` - Added `TabPagination` class and initialization (lines 92-240)
+- Theme `single-places.php` - Updated pagination containers, removed FacetWP pagers, added data attributes
+
+**Removed Dependencies:**
+- No longer uses FacetWP for Rentals/Events tab pagination
+- Removed `rentals_pager` and `events_pager` FacetWP facet usage on single place pages
+
+### Phase 4: TEC Integration & Rentals Pagination
+- **TEC Venue Sync**: Bidirectional sync between Places and The Events Calendar venues
+  - Auto-creates/updates TEC venues when places are saved
+  - Maps place data (address, phone, CTA) to venue fields
+  - Enables "Show Map" and "Show Map Link" by default on venues
+  - Intelligent address parsing (street, city, state, zip)
+  - Bidirectional tracking with `_linked_tec_venue` and `_linked_place` meta
+  - One-time migration tool to delete old venues and sync from places
+  - Admin notices for sync confirmation
+  - Support for external venues (not linked to places)
+- **Rentals Per Page**: Added ACF field for rentals tab pagination control
+  - Number field with default value of 4
+  - Conditional display (shows when "Show Rentals" toggle is ON)
+  - Used by single-places.php template for FacetWP pagination
+- **Rentals Pagination**: FacetWP-powered pagination on single place rentals tab
+  - Replaces foreach loop with WP_Query + FacetWP
+  - AJAX pagination with numbered pages
+  - Conditional display (only shows when results exceed per-page limit)
+  - Uses existing `rentals_pager` facet from rental-wp plugin
+  - Hybrid data source (relationship field + bidirectional sync)
+
+**New Files:**
+- `includes/class-tec-venue-sync.php` - TEC venue sync functionality (470+ lines)
+
+**Modified Files:**
+- `acf-fields.php` - Added `rentals_per_page` number field
+- `places.php` - Initialize TEC venue sync
+- Theme `single-places.php` - Implemented FacetWP pagination for rentals tab
+
+### Phase 3: Map Filter UI Enhancement
 - Redesigned map block with modern filter UI
 - Implemented filter panel overlay with slide-in animation
 - Added bottom-positioned search bar with grouped controls
@@ -1083,6 +1147,6 @@ All repeater fields start with 1 empty row, so editors can immediately begin add
 
 ---
 
-**Last Updated:** 2025-10-31
-**Plugin Version:** Alpha (Phase 3)
+**Last Updated:** 2025-11-12
+**Plugin Version:** Alpha (Phase 5)
 **Author:** Custom Development
