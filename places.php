@@ -131,6 +131,15 @@ function wp_maps_enqueue_single_place_scripts() {
         .custom-page.next {
           padding: 4px 12px;
         }
+        .custom-page.disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+          pointer-events: none;
+        }
+        .custom-page.disabled:hover {
+          background: #fff;
+          border-color: #ddd;
+        }
         </style>
         <script>
         (function() {
@@ -190,14 +199,13 @@ function wp_maps_enqueue_single_place_scripts() {
 
               let html = '<div class="custom-pager">';
 
-              // Previous arrow (SVG from rental-wp plugin)
-              if (this.currentPage > 1) {
-                html += `<a class="custom-page prev" data-page="${this.currentPage - 1}" href="#" aria-label="Previous page">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="9" height="11" viewBox="0 0 9 11" fill="none">
-                    <path d="M-2.40413e-07 5.5L8.25 0.736861L8.25 10.2631L-2.40413e-07 5.5Z" fill="#2C4E3F"></path>
-                  </svg>
-                </a>`;
-              }
+              // Previous arrow (always visible, disabled on first page)
+              const prevDisabled = this.currentPage <= 1 ? ' disabled' : '';
+              html += `<a class="custom-page prev${prevDisabled}" data-page="${this.currentPage - 1}" href="#" aria-label="Previous page" ${this.currentPage <= 1 ? 'aria-disabled="true"' : ''}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="9" height="11" viewBox="0 0 9 11" fill="none">
+                  <path d="M-2.40413e-07 5.5L8.25 0.736861L8.25 10.2631L-2.40413e-07 5.5Z" fill="#2C4E3F"></path>
+                </svg>
+              </a>`;
 
               // Page numbers
               for (let i = 1; i <= this.totalPages; i++) {
@@ -205,14 +213,13 @@ function wp_maps_enqueue_single_place_scripts() {
                 html += `<a class="custom-page${activeClass}" data-page="${i}" href="#">${i}</a>`;
               }
 
-              // Next arrow
-              if (this.currentPage < this.totalPages) {
-                html += `<a class="custom-page next" data-page="${this.currentPage + 1}" href="#" aria-label="Next page">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="9" height="11" viewBox="0 0 9 11" fill="none">
-                    <path d="M9 5.5L0.749999 10.2631L0.749999 0.73686L9 5.5Z" fill="#2C4E3F"></path>
-                  </svg>
-                </a>`;
-              }
+              // Next arrow (always visible, disabled on last page)
+              const nextDisabled = this.currentPage >= this.totalPages ? ' disabled' : '';
+              html += `<a class="custom-page next${nextDisabled}" data-page="${this.currentPage + 1}" href="#" aria-label="Next page" ${this.currentPage >= this.totalPages ? 'aria-disabled="true"' : ''}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="9" height="11" viewBox="0 0 9 11" fill="none">
+                  <path d="M9 5.5L0.749999 10.2631L0.749999 0.73686L9 5.5Z" fill="#2C4E3F"></path>
+                </svg>
+              </a>`;
 
               html += '</div>';
               paginationDiv.innerHTML = html;
@@ -221,6 +228,10 @@ function wp_maps_enqueue_single_place_scripts() {
               paginationDiv.querySelectorAll('.custom-page').forEach(link => {
                 link.addEventListener('click', (e) => {
                   e.preventDefault();
+                  // Don't process clicks on disabled arrows
+                  if (link.classList.contains('disabled')) {
+                    return;
+                  }
                   const page = parseInt(link.dataset.page);
                   if (page && page !== this.currentPage) {
                     this.showPage(page);
