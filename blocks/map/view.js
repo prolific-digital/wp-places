@@ -154,6 +154,9 @@
     // Initialize collapsible sections
     initCollapsibleSections(mapBlock);
 
+    // Enhance FacetWP checkboxes for keyboard accessibility
+    enhanceFacetCheckboxes();
+
     // Handle search form submission
     if (searchForm) {
       searchForm.addEventListener('submit', function (e) {
@@ -218,6 +221,56 @@
     });
   }
 
+  /**
+   * Enhance FacetWP checkboxes with keyboard accessibility
+   * Adds proper ARIA attributes, tabindex, and keyboard handlers
+   */
+  function enhanceFacetCheckboxes() {
+    const checkboxes = document.querySelectorAll('.facetwp-checkbox');
+
+    checkboxes.forEach(function (checkbox) {
+      // Skip if already enhanced (prevent duplicate handlers)
+      if (checkbox.dataset.a11yEnhanced === 'true') {
+        return;
+      }
+      checkbox.dataset.a11yEnhanced = 'true';
+
+      // Add ARIA attributes and tabindex
+      checkbox.setAttribute('role', 'checkbox');
+      checkbox.setAttribute('tabindex', '0');
+
+      // Set initial aria-checked state based on whether it's selected
+      const isChecked = checkbox.classList.contains('checked');
+      checkbox.setAttribute('aria-checked', isChecked ? 'true' : 'false');
+
+      // Keyboard event handler for Space and Enter keys
+      const keyboardHandler = function (e) {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          checkbox.click();
+        }
+      };
+
+      // Click handler to update aria-checked
+      const clickHandler = function () {
+        // Small delay to ensure FacetWP has updated the checked class
+        setTimeout(function () {
+          const isNowChecked = checkbox.classList.contains('checked');
+          checkbox.setAttribute('aria-checked', isNowChecked ? 'true' : 'false');
+        }, 50);
+      };
+
+      checkbox.addEventListener('keydown', keyboardHandler);
+      checkbox.addEventListener('click', clickHandler);
+
+      // Store handlers for potential cleanup
+      checkbox._a11yKeyboardHandler = keyboardHandler;
+      checkbox._a11yClickHandler = clickHandler;
+    });
+
+    console.log('Enhanced', checkboxes.length, 'FacetWP checkboxes for keyboard accessibility');
+  }
+
   // Note: Search functionality removed - handled natively by FacetWP search facet
 
   /**
@@ -225,7 +278,7 @@
    */
   function trapFocus(element) {
     const focusableElements = element.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), [role="checkbox"]'
     );
     const firstFocusable = focusableElements[0];
     const lastFocusable = focusableElements[focusableElements.length - 1];
@@ -282,6 +335,9 @@
     console.log('Number of results:', FWP.settings.num_results);
     // Don't re-initialize - our elements are persistent
     // Only the facet content inside gets replaced by FacetWP
+
+    // Re-enhance checkboxes after FacetWP refresh (they get re-rendered)
+    enhanceFacetCheckboxes();
   });
 
 })();
