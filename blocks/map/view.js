@@ -13,25 +13,19 @@
 
   // Prevent duplicate initialization
   if (window.wpPlacesMapInitialized) {
-    console.log('Map block JavaScript already initialized, skipping...');
     return;
   }
   window.wpPlacesMapInitialized = true;
-
-  console.log('Map block JavaScript loaded!');
 
   /**
    * Initialize all map blocks on the page
    */
   function initMapBlocks() {
-    console.log('initMapBlocks called');
     const mapBlocks = document.querySelectorAll('.block-map');
-    console.log('Found', mapBlocks.length, 'map blocks');
 
     mapBlocks.forEach(function (mapBlock) {
       // Check if this specific block has already been initialized
       if (mapBlock.dataset.mapInitialized === 'true') {
-        console.log('Map block already initialized, skipping...');
         return;
       }
       mapBlock.dataset.mapInitialized = 'true';
@@ -49,12 +43,6 @@
     const filterApplyBtn = mapBlock.querySelector('.filter-apply-btn');
     const searchBtn = mapBlock.querySelector('.search-btn');
     const searchForm = mapBlock.querySelector('.search-bar-content');
-
-    // Debug logging
-    console.log('Initializing map block...');
-    console.log('Filter panel:', filterPanel);
-    console.log('Filter toggle button:', filterToggleBtn);
-    console.log('Search button:', searchBtn);
 
     if (!filterPanel) {
       console.error('Filter panel not found!');
@@ -75,7 +63,6 @@
         el.setAttribute('data-original-tabindex', el.getAttribute('tabindex') || 'none');
         el.setAttribute('tabindex', '-1');
       });
-      console.log('Disabled tabbing for', focusableElements.length, 'filter panel elements');
     }
 
     /**
@@ -151,10 +138,8 @@
 
     // Filter toggle button click
     if (filterToggleBtn) {
-      console.log('Attaching click event to filter toggle button');
       filterToggleBtn.addEventListener('click', function (e) {
         e.preventDefault();
-        console.log('Filter toggle button clicked!');
         togglePanel(filterToggleBtn);
       });
     } else {
@@ -165,7 +150,6 @@
     if (filterCloseBtn) {
       filterCloseBtn.addEventListener('click', function (e) {
         e.preventDefault();
-        console.log('Close button clicked!');
         closePanel();
       });
     }
@@ -174,7 +158,6 @@
     if (filterApplyBtn) {
       filterApplyBtn.addEventListener('click', function (e) {
         e.preventDefault();
-        console.log('Apply filter button clicked!');
         closePanel();
         // FacetWP will auto-refresh on facet changes
       });
@@ -205,7 +188,6 @@
     if (searchForm) {
       searchForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        console.log('Search form submitted (prevented default)');
         // FacetWP handles the search automatically, just trigger refresh
         if (typeof FWP !== 'undefined') {
           FWP.refresh();
@@ -218,7 +200,6 @@
     if (searchBtn) {
       searchBtn.addEventListener('click', function (e) {
         e.preventDefault();
-        console.log('Search button clicked');
         // FacetWP handles the search automatically, just trigger refresh
         if (typeof FWP !== 'undefined') {
           FWP.refresh();
@@ -311,8 +292,6 @@
       checkbox._a11yKeyboardHandler = keyboardHandler;
       checkbox._a11yClickHandler = clickHandler;
     });
-
-    console.log('Enhanced', checkboxes.length, 'FacetWP checkboxes for keyboard accessibility');
   }
 
   // Note: Search functionality removed - handled natively by FacetWP search facet
@@ -374,9 +353,6 @@
    * are attached to elements that don't get replaced by FacetWP
    */
   document.addEventListener('facetwp-loaded', function () {
-    console.log('FacetWP loaded event fired');
-    console.log('Current facet values after refresh:', FWP.facets);
-    console.log('Number of results:', FWP.settings.num_results);
     // Don't re-initialize - our elements are persistent
     // Only the facet content inside gets replaced by FacetWP
 
@@ -399,56 +375,98 @@
           el.setAttribute('tabindex', '-1');
         }
       });
-      console.log('Re-disabled tabbing for', focusableElements.length, 'filter panel elements');
     }
   });
 
   /**
    * Remove Google Maps UI elements from tab order
    * This ensures search/filter controls are tabbed to first
+   * But keeps location markers focusable for accessibility
    */
   function removeMapFromTabOrder() {
     const mapContainer = document.querySelector('.facet.custom-map');
     if (!mapContainer) return;
 
-    // Function to remove all interactive elements from tab order
+    // Function to remove Google Maps UI controls from tab order
+    // but preserve location markers
     const removeInteractiveElements = function() {
       mapContainer.setAttribute('tabindex', '-1');
 
+      // Remove all buttons EXCEPT those that might be location markers
+      // Location markers typically have aria-label with location info
       const mapButtons = mapContainer.querySelectorAll('button');
       const mapLinks = mapContainer.querySelectorAll('a');
       const mapIframes = mapContainer.querySelectorAll('iframe');
       const mapDivsWithTabindex = mapContainer.querySelectorAll('div[tabindex="0"]');
 
+      let removedButtons = 0;
       mapButtons.forEach(btn => {
-        if (btn.getAttribute('tabindex') !== '-1') {
+        // Check if this is a Google Maps control (not a location marker)
+        const ariaLabel = btn.getAttribute('aria-label') || '';
+        const title = btn.getAttribute('title') || '';
+        const isGoogleMapsControl =
+          // Zoom controls
+          btn.classList.contains('gm-control-active') ||
+          // Keyboard shortcuts
+          btn.textContent.includes('Keyboard shortcuts') ||
+          ariaLabel.includes('Keyboard shortcuts') ||
+          title.includes('Keyboard shortcuts') ||
+          // Camera controls
+          ariaLabel.includes('camera') ||
+          ariaLabel.includes('Camera') ||
+          title.includes('camera') ||
+          title.includes('Camera') ||
+          // Rotate/tilt controls
+          ariaLabel.includes('Rotate') ||
+          ariaLabel.includes('Tilt') ||
+          // Other Google Maps UI
+          btn.closest('.gm-bundled-control') !== null ||
+          btn.closest('.gm-svpc') !== null;
+
+        // Only remove from tab order if it IS a Google Maps control
+        if (isGoogleMapsControl && btn.getAttribute('tabindex') !== '-1') {
           btn.setAttribute('tabindex', '-1');
+          removedButtons++;
         }
       });
+
+      // Remove all links (Terms, Report error, etc.)
       mapLinks.forEach(link => {
         if (link.getAttribute('tabindex') !== '-1') {
           link.setAttribute('tabindex', '-1');
         }
       });
+
+      // Remove iframes
       mapIframes.forEach(iframe => {
         if (iframe.getAttribute('tabindex') !== '-1') {
           iframe.setAttribute('tabindex', '-1');
         }
       });
+
+      // Remove keyboard shortcut overlays, but preserve location marker divs
+      let removedDivs = 0;
       mapDivsWithTabindex.forEach(div => {
-        div.setAttribute('tabindex', '-1');
+        // Check if this div is a location marker (has an image or role="button" with image)
+        const hasImage = div.querySelector('img') !== null;
+        const isMarker = hasImage || (div.getAttribute('role') === 'button' && div.querySelector('img'));
+
+        // Only remove keyboard overlays, not location markers
+        if (!isMarker) {
+          div.setAttribute('tabindex', '-1');
+          removedDivs++;
+        }
       });
 
       return {
-        buttons: mapButtons.length,
+        buttons: removedButtons,
         links: mapLinks.length,
-        divs: mapDivsWithTabindex.length
+        divs: removedDivs
       };
     };
 
     // Remove current elements
-    const counts = removeInteractiveElements();
-    console.log('Removed from tab order:', counts.buttons, 'buttons,', counts.links, 'links,', counts.divs, 'divs');
+    removeInteractiveElements();
 
     // Set up MutationObserver to catch Google Maps adding elements dynamically
     if (!mapContainer._tabIndexObserver) {
@@ -462,8 +480,92 @@
       });
 
       mapContainer._tabIndexObserver = observer;
-      console.log('Set up MutationObserver to monitor Google Maps UI changes');
     }
   }
+
+  /**
+   * Handle focus management for Google Maps info windows (location popups)
+   * Traps focus inside the info window so users can tab between close button and view details
+   */
+  function handleInfoWindowFocus() {
+    const mapContainer = document.querySelector('.facet.custom-map');
+    if (!mapContainer) return;
+
+    // Set up observer to detect when info windows open
+    const infoWindowObserver = new MutationObserver(function(mutations) {
+      // Look for info window elements
+      const infoWindow = document.querySelector('.gm-style-iw.gm-style-iw-c');
+
+      if (infoWindow && !infoWindow.dataset.a11yEnhanced) {
+        // Mark as enhanced to prevent duplicate processing
+        infoWindow.dataset.a11yEnhanced = 'true';
+
+        // Ensure content links (like "View Details") are focusable
+        const viewDetailsLink = infoWindow.querySelector('.marker-view-details');
+
+        if (viewDetailsLink) {
+          // Always set tabindex to 0, even if it's currently -1
+          viewDetailsLink.setAttribute('tabindex', '0');
+        }
+
+        // Set up focus trapping - be more inclusive with selector
+        const focusableElements = infoWindow.querySelectorAll('a, button, [tabindex="0"]');
+        const firstFocusable = focusableElements[0];
+        const lastFocusable = focusableElements[focusableElements.length - 1];
+
+        // Focus trap handler - only allow tabbing between close button and view details
+        function handleInfoWindowTabKey(e) {
+          if (e.key !== 'Tab') return;
+
+          // Check if focus is currently on one of our info window elements
+          const isOnFirstElement = document.activeElement === firstFocusable;
+          const isOnLastElement = document.activeElement === lastFocusable;
+
+          // If focus is on one of our elements, trap it
+          if (isOnFirstElement || isOnLastElement) {
+            e.preventDefault();
+
+            if (e.shiftKey) {
+              // Shift + Tab (backward) - toggle to the other element
+              if (isOnFirstElement) {
+                lastFocusable.focus();
+              } else {
+                firstFocusable.focus();
+              }
+            } else {
+              // Tab (forward) - toggle to the other element
+              if (isOnFirstElement) {
+                lastFocusable.focus();
+              } else {
+                firstFocusable.focus();
+              }
+            }
+          }
+        }
+
+        // Add focus trap - listen on document to catch all tab events
+        document.addEventListener('keydown', handleInfoWindowTabKey);
+        infoWindow._focusTrapHandler = handleInfoWindowTabKey;
+      }
+
+      // Remove focus trap from closed info windows
+      const allInfoWindows = document.querySelectorAll('.gm-style-iw.gm-style-iw-c');
+      allInfoWindows.forEach(function(win) {
+        if (!document.contains(win) && win._focusTrapHandler) {
+          document.removeEventListener('keydown', win._focusTrapHandler);
+          delete win._focusTrapHandler;
+          delete win.dataset.a11yEnhanced;
+        }
+      });
+    });
+
+    infoWindowObserver.observe(mapContainer, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  // Initialize info window focus handling
+  handleInfoWindowFocus();
 
 })();
