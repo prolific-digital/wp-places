@@ -65,6 +65,36 @@
     let panelOpener = null;
 
     /**
+     * Disable tab navigation in filter panel (when closed)
+     */
+    function disableFilterPanelTabbing() {
+      const focusableElements = filterPanel.querySelectorAll(
+        'button, [href], input, select, textarea, [role="checkbox"], [tabindex]:not([tabindex="-1"])'
+      );
+      focusableElements.forEach(function(el) {
+        el.setAttribute('data-original-tabindex', el.getAttribute('tabindex') || 'none');
+        el.setAttribute('tabindex', '-1');
+      });
+      console.log('Disabled tabbing for', focusableElements.length, 'filter panel elements');
+    }
+
+    /**
+     * Enable tab navigation in filter panel (when opened)
+     */
+    function enableFilterPanelTabbing() {
+      const focusableElements = filterPanel.querySelectorAll('[data-original-tabindex]');
+      focusableElements.forEach(function(el) {
+        const originalTabindex = el.getAttribute('data-original-tabindex');
+        if (originalTabindex === 'none') {
+          el.removeAttribute('tabindex');
+        } else {
+          el.setAttribute('tabindex', originalTabindex);
+        }
+        el.removeAttribute('data-original-tabindex');
+      });
+    }
+
+    /**
      * Open the filter panel
      */
     function openPanel(opener) {
@@ -72,6 +102,9 @@
       filterPanel.classList.add('is-open');
       filterPanel.removeAttribute('hidden');
       filterPanel.setAttribute('aria-hidden', 'false');
+
+      // Enable tab navigation in the panel
+      enableFilterPanelTabbing();
 
       // Focus the close button when panel opens
       setTimeout(function () {
@@ -91,6 +124,9 @@
       filterPanel.classList.remove('is-open');
       filterPanel.setAttribute('hidden', '');
       filterPanel.setAttribute('aria-hidden', 'true');
+
+      // Disable tab navigation in the panel
+      disableFilterPanelTabbing();
 
       // Restore focus to the element that opened the panel
       if (panelOpener) {
@@ -156,6 +192,14 @@
 
     // Enhance FacetWP checkboxes for keyboard accessibility
     enhanceFacetCheckboxes();
+
+    // Remove map from tab order so users tab to search/filter controls first
+    removeMapFromTabOrder();
+
+    // Disable tab navigation in closed filter panel
+    if (filterPanel && filterPanel.hasAttribute('hidden')) {
+      disableFilterPanelTabbing();
+    }
 
     // Handle search form submission
     if (searchForm) {
@@ -338,6 +382,88 @@
 
     // Re-enhance checkboxes after FacetWP refresh (they get re-rendered)
     enhanceFacetCheckboxes();
+
+    // Re-apply map accessibility fixes (Google Maps might re-render UI elements)
+    removeMapFromTabOrder();
+
+    // Re-disable filter panel tabbing if it's still closed
+    const filterPanel = document.querySelector('.filter-panel');
+    if (filterPanel && filterPanel.hasAttribute('hidden')) {
+      // Need to access the function from the block scope
+      const focusableElements = filterPanel.querySelectorAll(
+        'button, [href], input, select, textarea, [role="checkbox"], [tabindex]:not([tabindex="-1"])'
+      );
+      focusableElements.forEach(function(el) {
+        if (!el.hasAttribute('data-original-tabindex')) {
+          el.setAttribute('data-original-tabindex', el.getAttribute('tabindex') || 'none');
+          el.setAttribute('tabindex', '-1');
+        }
+      });
+      console.log('Re-disabled tabbing for', focusableElements.length, 'filter panel elements');
+    }
   });
+
+  /**
+   * Remove Google Maps UI elements from tab order
+   * This ensures search/filter controls are tabbed to first
+   */
+  function removeMapFromTabOrder() {
+    const mapContainer = document.querySelector('.facet.custom-map');
+    if (!mapContainer) return;
+
+    // Function to remove all interactive elements from tab order
+    const removeInteractiveElements = function() {
+      mapContainer.setAttribute('tabindex', '-1');
+
+      const mapButtons = mapContainer.querySelectorAll('button');
+      const mapLinks = mapContainer.querySelectorAll('a');
+      const mapIframes = mapContainer.querySelectorAll('iframe');
+      const mapDivsWithTabindex = mapContainer.querySelectorAll('div[tabindex="0"]');
+
+      mapButtons.forEach(btn => {
+        if (btn.getAttribute('tabindex') !== '-1') {
+          btn.setAttribute('tabindex', '-1');
+        }
+      });
+      mapLinks.forEach(link => {
+        if (link.getAttribute('tabindex') !== '-1') {
+          link.setAttribute('tabindex', '-1');
+        }
+      });
+      mapIframes.forEach(iframe => {
+        if (iframe.getAttribute('tabindex') !== '-1') {
+          iframe.setAttribute('tabindex', '-1');
+        }
+      });
+      mapDivsWithTabindex.forEach(div => {
+        div.setAttribute('tabindex', '-1');
+      });
+
+      return {
+        buttons: mapButtons.length,
+        links: mapLinks.length,
+        divs: mapDivsWithTabindex.length
+      };
+    };
+
+    // Remove current elements
+    const counts = removeInteractiveElements();
+    console.log('Removed from tab order:', counts.buttons, 'buttons,', counts.links, 'links,', counts.divs, 'divs');
+
+    // Set up MutationObserver to catch Google Maps adding elements dynamically
+    if (!mapContainer._tabIndexObserver) {
+      const observer = new MutationObserver(function(mutations) {
+        removeInteractiveElements();
+      });
+
+      observer.observe(mapContainer, {
+        childList: true,
+        subtree: true
+      });
+
+      mapContainer._tabIndexObserver = observer;
+      console.log('Set up MutationObserver to monitor Google Maps UI changes');
+    }
+  }
 
 })();

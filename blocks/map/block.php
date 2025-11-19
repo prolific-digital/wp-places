@@ -113,12 +113,8 @@ if (! empty($block['align'])) {
       </div>
     </div>
 
-    <!-- Map Container (facet - outside template) -->
-    <div id="facet-map-<?php echo esc_attr($id); ?>" class="facet custom-map">
-      <?php echo facetwp_display('facet', 'location_map'); ?>
-    </div>
-
     <!-- Search Bar (positioned at bottom of map - outside template) -->
+    <!-- Placed before map in DOM for tab order, but positioned visually at bottom via CSS -->
     <div class="map-search-bar">
       <form class="search-bar-content" onsubmit="return false;">
         <!-- Search field and button grouped together -->
@@ -130,6 +126,11 @@ if (! empty($block['align'])) {
         </div>
         <button type="button" class="filter-toggle-btn" aria-label="Toggle filters panel">FILTER</button>
       </form>
+    </div>
+
+    <!-- Map Container (facet - outside template) -->
+    <div id="facet-map-<?php echo esc_attr($id); ?>" class="facet custom-map">
+      <?php echo facetwp_display('facet', 'location_map'); ?>
     </div>
 
     <!-- Hidden: Location Listing wrapped in FacetWP template -->
