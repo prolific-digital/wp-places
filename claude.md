@@ -116,11 +116,11 @@ The plugin uses two separate field groups for better organization:
 
 6. **Social Media Links** (`social_media_links`)
    - Type: Repeater
-   - Min Rows: 1 (starts with empty row)
+   - Min Rows: 0
    - Sub-fields:
-     - `platform_name` (Text)
-     - `icon` (Image) - Upload custom social icons
-     - `url` (URL)
+     - `platform` (Select) - Required, choices: Facebook, Instagram
+     - `url` (URL) - Required
+   - Note: Icons are rendered automatically as inline SVGs based on platform selection
 
 7. **CTA Button** (`cta_button`)
    - Type: Link
